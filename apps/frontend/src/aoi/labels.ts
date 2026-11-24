@@ -1,7 +1,7 @@
 // 界面上的中文文案。引擎只用英文 id，翻译统一放在这里。
-// 派系、学科的中文名是暂定译名，拿到中文版规则书后再统一校对。
+// 派系、地形的中文名照中文版配件；学科的中文名还是暂定译名。
 import type {
-    BookActionId, BookColor, BuildingType, Decision, Discipline, Phase,
+    BookActionId, BookColor, BuildingType, Decision, Discipline, FactionId, Phase,
     PowerActionId, RuleError, StructureType, Terrain,
 } from "@aoi/engine/aoi";
 
@@ -14,9 +14,10 @@ export const DISCIPLINE_NAME: Record<Discipline, string> = {
     banking: "银行", law: "法律", engineering: "工程", medicine: "医学",
 };
 
+/** gray 表示"任选颜色"，只出现在收益和费用里 */
 export const BOOK_NAME: Record<BookColor, string> = {
     ...DISCIPLINE_NAME,
-    gray: "通用",
+    gray: "任选颜色",
 };
 
 export const STRUCTURE_NAME: Record<StructureType, string> = {
@@ -52,15 +53,15 @@ export const PHASE_NAME: Record<Phase, string> = {
     scienceBonus: "科学奖励", ended: "游戏结束",
 };
 
-/** 暂定译名；未收录的派系直接显示英文 id */
-const FACTION_NAME: Record<string, string> = {
-    blessed: "受祝福者", felines: "猫族", goblins: "哥布林", illusionists: "幻术师",
-    inventors: "发明家", lizards: "蜥蜴人", moles: "鼹鼠", monks: "僧侣",
-    navigators: "航海家", omar: "奥马尔", philosophers: "哲学家", psychics: "灵能者",
+/** 派系的中文名：照中文版派系板块上印的名字 */
+const FACTION_NAME: Record<FactionId, string> = {
+    blessed: "圣者", felines: "猫人族", goblins: "哥布林", illusionists: "魔术师",
+    inventors: "发明家", lizards: "蜥蜴", moles: "鼹鼠", monks: "僧侣",
+    navigators: "航海家", omar: "奥马尔", philosophers: "哲学家", psychics: "通灵者",
 };
 
-export function factionName(id: string): string {
-    return FACTION_NAME[id] ?? id;
+export function factionName(id: FactionId): string {
+    return FACTION_NAME[id];
 }
 
 /** 违规原因 → 中文提示（对应接口约定第 8 节） */
@@ -100,6 +101,8 @@ export function describeDecision(d: Decision, name: (seat: number) => string): s
         case "competency": return "选择一个能力板块";
         case "palaceTile": return "选择一个宫殿板块";
         case "cityTile": return "选择一个城市板块";
+        case "bookColor": return `获得 ${d.count} 本书，选择颜色`;
+        case "draftPick": return "轮抽：从规划板、派系、回合奖励板块、宫殿板块里拿一样";
         default: {
             // 穷尽检查：接口里新增了一种决策而这里没处理时，这一行会报类型错误
             const unhandled: never = d;

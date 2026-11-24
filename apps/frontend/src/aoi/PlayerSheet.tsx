@@ -1,6 +1,6 @@
 import {
-    BRIDGES_TOTAL, MAX_INNOVATIONS,
-    type BookColor, type BuildingType, type PlayerState,
+    BRIDGES_TOTAL, DISCIPLINES, MAX_INNOVATIONS,
+    type BuildingType, type PlayerState,
 } from "@aoi/engine/aoi";
 import { DISCIPLINE_COLOR, TERRAIN_COLOR, inkOn } from "./colors.ts";
 import { BOOK_NAME, BUILDING_TOTAL, STRUCTURE_NAME, TERRAIN_NAME, factionName } from "./labels.ts";
@@ -8,8 +8,6 @@ import { BookIcon, CoinIcon, KeyIcon, ScholarIcon, ToolIcon } from "./icons.tsx"
 import { PowerBowls } from "./PowerBowls.tsx";
 
 const BUILDINGS: BuildingType[] = ["workshop", "guild", "school", "university", "palace"];
-const BOOK_COLORS: BookColor[] = ["banking", "law", "engineering", "medicine", "gray"];
-const bookColor = (c: BookColor) => (c === "gray" ? "#8C9396" : DISCIPLINE_COLOR[c]);
 
 /** 底部的玩家板：正在查看的那位玩家的全部家当，横着排开 */
 export function PlayerSheet({ p, name, isMe }: { p: PlayerState; name: string; isMe: boolean }) {
@@ -33,9 +31,9 @@ export function PlayerSheet({ p, name, isMe }: { p: PlayerState; name: string; i
                     <li title="钥匙"><KeyIcon /><span className="num">{p.keys}</span><span className="stock-name">钥匙</span></li>
                 </ul>
                 <ul className="books" aria-label="书">
-                    {BOOK_COLORS.map((c) => (
+                    {DISCIPLINES.map((c) => (
                         <li key={c} className={p.books[c] === 0 ? "book-none" : ""} title={`${BOOK_NAME[c]}书 ${p.books[c]} 本`}>
-                            <BookIcon color={bookColor(c)} /><span className="num">{p.books[c]}</span>
+                            <BookIcon color={DISCIPLINE_COLOR[c]} /><span className="num">{p.books[c]}</span>
                         </li>
                     ))}
                 </ul>

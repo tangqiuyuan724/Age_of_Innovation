@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 2;
+export const CONTRACT_VERSION = 3;
 
 // ---------- 基础 ----------
 
@@ -18,7 +18,13 @@ export type Terrain = "desert" | "plains" | "swamp" | "lake" | "forest" | "mount
 /** 4 门学科（discipline） */
 export type Discipline = "banking" | "law" | "engineering" | "medicine";
 
-/** 书的颜色：4 门学科各一种，外加可当任意学科用的灰色书 */
+/**
+ * 书的颜色：4 门学科各一种。
+ * "gray" 只出现在收益和费用里，表示"任选颜色"：
+ *  - 在收益里：由玩家自己选颜色（会产生一个 bookColor 决策）
+ *  - 在费用里：任意颜色都可以付
+ * 玩家手上的书一定有具体颜色，没有灰色书。
+ */
 export type BookColor = Discipline | "gray";
 
 /** 玩家自己的 5 种建筑 */
@@ -45,13 +51,38 @@ export interface ResourceBundle {
 
 // ---------- 内容 ID ----------
 
-export type FactionId = string; // 派系板块
-export type PlanningId = string;    //规划展示板块
+/** 12 个派系 */
+export type FactionId =
+    | "blessed"      // 圣者
+    | "felines"      // 猫人族
+    | "goblins"      // 哥布林
+    | "illusionists" // 魔术师
+    | "inventors"    // 发明家
+    | "lizards"      // 蜥蜴
+    | "moles"        // 鼹鼠
+    | "monks"        // 僧侣
+    | "navigators"   // 航海家
+    | "omar"         // 奥马尔
+    | "philosophers" // 哲学家
+    | "psychics";    // 通灵者
+/** 规划板：7 块，每块对应一种家园地形，所以直接用地形当编号 */
+export type PlanningId = Terrain;
 export type PalaceTileId = number; // 宫殿板块
 export type InnovationId = string;  // 大创板块
 export type CompetencyId = string;  //能力板块
 export type CityTileId = string;    // 城市板块
-export type BonusTileId = string;   // 轮次奖励板块
+/** 10 个回合奖励板块 */
+export type BonusTileId =
+    | "riverWorkshop"    // 行动：在河边建工坊得 2 分；航行范围 +1
+    | "scholarSend"      // 行动：派学者得 2 分；收入 1 学者
+    | "guildBuild"       // 行动：建行会得 3 分；收入 3 能量
+    | "bigBuildingsPass" // pass 时每座大学、宫殿得 4 分；收入 1 工具
+    | "spadeAction"      // 特殊行动：1 铲改造并建造；收入 1 本任选颜色的书
+    | "bridgeAction"     // 特殊行动：免费建桥；收入 1 本任选颜色的书
+    | "levelAction"      // 特殊行动：任选学科前进 1 级；收入 2 工具
+    | "schoolsPass"      // pass 时每座学校任选学科前进 1 级；收入 4 金币
+    | "power4coins2"     // 收入 4 能量、2 金币
+    | "coins6";          // 收入 6 金币
 export type RoundScoreId = string;  // 轮次积分板块
 export type FinalRoundScoreId = string; // 最终轮次积分板块
 /** 开局时一组"派系 + 规划板 + 回合奖励板块"的编号 */
@@ -171,7 +202,7 @@ export interface PlayerState {
     scholars: number;
     /** 还在个人供应区、尚未获得的学者（每人共 7 个） */
     scholarsInSupply: number;
-    books: Record<BookColor, number>;   // 书
+    books: Record<Discipline, number>;   // 书（没有灰色，颜色和学科对应）
     power: PowerBowls;  // 能量
 
     /** 剩余可建的桥（每人 3 座） */
@@ -186,7 +217,8 @@ export interface PlayerState {
     /** 规划板上还没建出去的建筑；空出来的格子决定收入 */
     buildingsLeft: Record<BuildingType, number>;
 
-    palaceTile: PalaceTileId | null;    // 宫殿板块
+    /** 宫殿板块。固定组合开局：升级宫殿时才选；轮抽开局：一开始就有，宫殿建好后才生效 */
+    palaceTile: PalaceTileId | null;
     innovations: InnovationId[];    // 大创板块
     competencies: CompetencyId[];   // 能力板块
     cityTiles: CityTileId[];    // 城市板块
@@ -204,7 +236,50 @@ export interface BonusTileOnBoard {
     coins: number;
 }
 
+/** 开局时摆出的一组"规划板 + 派系 + 回合奖励板块"，玩家从中选一组 */
+export interface SetupSet {
+    id: SetupSetId;
+    planning: PlanningId;
+    faction: FactionId;
+    bonusTile: BonusTileId;
+    /** 被哪个座位选走了；还没人选为 null */
+    takenBy: Seat | null;
+}
+
+/** 轮抽开局时可以拿的 4 类东西 */
+export type DraftCategory = "planning" | "faction" | "bonusTile" | "palaceTile";
+
+/** 轮抽时拿的一样东西：哪一类、哪一个 */
+export type DraftItem =
+    | { category: "planning"; id: PlanningId }
+    | { category: "faction"; id: FactionId }
+    | { category: "bonusTile"; id: BonusTileId }
+    | { category: "palaceTile"; id: PalaceTileId };
+
+/** 一个座位在轮抽里已经拿到的东西，还没拿的是 null */
+export interface DraftPicks {
+    planning: PlanningId | null;
+    faction: FactionId | null;
+    bonusTile: BonusTileId | null;
+    palaceTile: PalaceTileId | null;
+}
+
+/** 轮抽开局时摆出来的东西 */
+export interface DraftPool {
+    /** 还没被拿走的 */
+    planning: PlanningId[];
+    faction: FactionId[];
+    bonusTile: BonusTileId[];
+    palaceTile: PalaceTileId[];
+    /** 每个座位已经拿到的东西，下标 = 座位号 */
+    picks: DraftPicks[];
+}
+
 export interface BoardState {
+    /** 固定组合开局的 7 组选择（选完后留着，前端可以显示谁选了什么）；轮抽开局时为空数组 */
+    setupSets: SetupSet[];
+    /** 轮抽开局摆出来的东西；固定组合开局时为 null */
+    draft: DraftPool | null;
     powerActionsUsed: PowerActionId[];   // 已用的能量行动
     /** 本局翻开的 3 个书本行动 */
     bookActions: BookActionId[];
@@ -234,9 +309,21 @@ export interface TurnInfo {
     mainActionDone: boolean;
 }
 
+/**
+ * 轮抽的顺序。现在只有蛇形（1-2-3-3-2-1-1-2-3…）；
+ * 以后要加别的顺序，在这里加一个名字，再在引擎的 draftOrder 里加一种排法。
+ */
+export type DraftOrder = "snake";
+
+/** 开局方式 */
+export type SetupMode =
+    | { kind: "sets" }                       // 固定组合：7 块规划板各配 1 个派系、1 个回合奖励板块，每人选一组
+    | { kind: "draft"; order: DraftOrder };  // 轮抽：规划板、派系、回合奖励板块、宫殿板块分开摆，轮流拿
+
 export interface SetupOptions {
     playerCount: number; // 2~5
     mapId: string;
+    setupMode: SetupMode;
 }
 
 export interface FinalScore {
@@ -287,7 +374,9 @@ export type Decision =
     | (DecisionBase & { kind: "trackReward" })  // 航行/改造轨奖励
     | (DecisionBase & { kind: "competency"; options: CompetencyId[] })  // 选能力板块
     | (DecisionBase & { kind: "palaceTile"; options: PalaceTileId[] })  // 选宫殿板块
-    | (DecisionBase & { kind: "cityTile"; cityId: number; options: CityTileId[] }); // 选城市板块
+    | (DecisionBase & { kind: "cityTile"; cityId: number; options: CityTileId[] }) // 选城市板块
+    | (DecisionBase & { kind: "bookColor"; count: number })   // 获得 count 本任选颜色的书，选颜色
+    | (DecisionBase & { kind: "draftPick"; options: DraftItem[] }); // 轮抽开局：从还能拿的东西里拿一样
 
 export type DecisionChoice =
     | { kind: "pickSet"; set: SetupSetId }
@@ -298,13 +387,16 @@ export type DecisionChoice =
     | { kind: "bridge"; a: HexId; b: HexId }
     | { kind: "scienceLevels"; discipline: Discipline }
     | { kind: "trackReward"; reward: "vp" | Discipline }
+    | { kind: "bookColor"; books: Partial<Record<Discipline, number>> }
+    | { kind: "draftPick"; item: DraftItem }
     | { kind: "competency"; tile: CompetencyId }
     | { kind: "palaceTile"; tile: PalaceTileId }
     | { kind: "cityTile"; tile: CityTileId };
 
 // ---------- 指令（客户端发给服务器的 move） ----------
 
-export type BookPayment = Partial<Record<BookColor, number>>;
+/** 付书时写清楚每种颜色各付几本 */
+export type BookPayment = Partial<Record<Discipline, number>>;
 
 export type Move =
     // 自由行动：自己回合内，主行动前后都能做

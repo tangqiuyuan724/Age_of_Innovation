@@ -1,7 +1,7 @@
 // 规则常量。每个数字后面注明来源，方便以后核对规则书。
 
 import type {
-    BookActionId, Discipline, PowerActionId, PowerBowls, ResourceBundle,
+    BookActionId, BuildingType, Discipline, DraftCategory, PowerActionId, PowerBowls, ResourceBundle,
     StructureType, Terrain, TerrainCode,
 } from "./types.js";
 
@@ -64,3 +64,26 @@ export const CITY_MIN_POWER = 7;
 export const AREA_SCORE_POINTS: readonly number[] = [18, 12, 6];    // 区域分数
 export const SCIENCE_SCORE_POINTS: readonly number[] = [8, 4, 2];   // 学科分数
 export const COINS_PER_VP = 5;  // 1vp/5c
+
+/** 每种建筑的总数，也就是规划板上这一行的格子数。来源：规划板 */
+export const BUILDINGS_TOTAL: Record<BuildingType, number> = {
+    workshop: 9, guild: 4, school: 3, university: 1, palace: 1,
+};
+
+/** 学科到 9 级及以上，每轮收入阶段额外获得。来源：学科展示板第 9 格旁边印的收入 */
+export const SCIENCE_INCOME_LEVEL = 9;
+export const SCIENCE_INCOME: Record<Discipline, ResourceBundle> = {
+    banking: { coins: 3 },
+    law: { power: 6 },
+    engineering: { tools: 1 },
+    medicine: { vp: 3 },
+};
+
+/**
+ * 轮抽开局时每一类摆出"人数 + 几"个。
+ * 回合奖励板块多摆 3 个，选完剩下的 3 个放到场上，和固定组合开局一样。
+ * 规则书的轮抽变体里规划板是翻开 6 块；我们按"人数 + 1"，要改只改这里。
+ */
+export const DRAFT_EXTRA: Record<DraftCategory, number> = {
+    planning: 1, faction: 1, bonusTile: 3, palaceTile: 1,
+};
