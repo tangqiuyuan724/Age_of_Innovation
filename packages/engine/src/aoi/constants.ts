@@ -1,6 +1,9 @@
 // 规则常量。每个数字后面注明来源，方便以后核对规则书。
 
-import { BookActionId, Discipline, PowerActionId, PowerBowls, ResourceBundle, StructureType, Terrain, TerrainCode } from "./types.ts";
+import type {
+    BookActionId, Discipline, PowerActionId, PowerBowls, ResourceBundle,
+    StructureType, Terrain, TerrainCode,
+} from "./types.js";
 
 /** 地形轮（terraforming circle）顺序，首尾相连。来源：规则书"改造"一节 */
 export const TERRAIN_WHEEL: readonly Terrain[] = [
