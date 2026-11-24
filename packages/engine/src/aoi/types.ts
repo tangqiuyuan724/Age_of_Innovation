@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 1;
+export const CONTRACT_VERSION = 2;
 
 // ---------- 基础 ----------
 
@@ -98,6 +98,28 @@ export interface MapDef {
     id: string;
     name: string;
     rows: string[];
+}
+
+/** 解析后的一个格子（静态） */
+export interface HexInfo {
+    id: HexId;
+    /** 行下标，从 0 开始（A 行是 0） */
+    row: number;
+    /** 列下标，从 0 开始（第 1 列是 0） */
+    col: number;
+    river: boolean;
+    /** 河流格为 null */
+    terrain: Terrain | null;
+}
+
+/** 解析后的地图：引擎用它算邻接和可达范围，前端用 row/col 画格子 */
+export interface MapGeometry {
+    id: string;
+    name: string;
+    rowCount: number;
+    /** 按行、再按列的顺序 */
+    hexes: HexInfo[];
+    byId: Record<HexId, HexInfo>;
 }
 
 // ---------- 地图（动态状态） ----------
