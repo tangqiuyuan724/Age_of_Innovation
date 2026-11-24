@@ -1,0 +1,191 @@
+/* 大创造时代界面。颜色：玩家色 = 家园地形色；紫色只用于能量。 */
+
+body:has(.aoi-root) {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: #EDF0EA;
+}
+
+.aoi-root {
+    --paper: #EDF0EA;
+    --panel: #F8F9F6;
+    --ink: #1F2F38;
+    --muted: #5D6B70;
+    --rule: #C9D0C8;
+    --power: #6C4BA6;
+    --power-soft: #E9E3F4;
+    --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+
+    min-height: 100vh;
+    padding: 16px 24px 96px;
+    box-sizing: border-box;
+    color: var(--ink);
+    background: var(--paper);
+    font: 15px/1.6 var(--sans);
+}
+
+.aoi-root *, .aoi-root *::before, .aoi-root *::after { box-sizing: border-box; }
+.aoi-root h2, .aoi-root h3, .aoi-root p, .aoi-root ul, .aoi-root ol, .aoi-root dl, .aoi-root dd { margin: 0; padding: 0; }
+.aoi-root ul, .aoi-root ol { list-style: none; }
+.aoi-root .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.aoi-root h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 18px 0 8px; }
+.aoi-root a { color: var(--ink); }
+.aoi-root button:focus-visible, .aoi-root a:focus-visible { outline: 2px solid var(--power); outline-offset: 2px; }
+
+.preview-note { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.preview-note a { margin-left: 8px; }
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 18px;
+}
+.round { display: flex; align-items: baseline; gap: 12px; }
+.round-num { font-family: var(--serif); font-size: 30px; font-weight: 700; letter-spacing: 0.04em; }
+.round-phase { font-size: 15px; color: var(--muted); }
+.order { display: flex; gap: 8px; }
+.order-chip { padding: 3px 12px; border-radius: 999px; font-size: 14px; opacity: 0.72; }
+.order-active { opacity: 1; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.rounds { display: flex; gap: 4px; margin-left: auto; }
+.rounds li {
+    width: 26px; height: 26px; display: grid; place-items: center;
+    border: 1px solid var(--rule); border-radius: 4px; font-size: 13px; color: var(--muted);
+}
+.rounds .rounds-past { background: var(--rule); color: var(--panel); border-color: var(--rule); }
+.rounds .rounds-now { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+
+/* ---------- 桌面布局 ---------- */
+.table { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+@media (max-width: 960px) { .table { grid-template-columns: 1fr; } .table-side { order: -1; } }
+
+.map-slot {
+    min-height: 340px;
+    border: 1px dashed var(--muted);
+    border-radius: 6px;
+    padding: 24px;
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px;
+    background:
+        repeating-linear-gradient(60deg, transparent 0 22px, rgba(31, 47, 56, 0.04) 22px 23px),
+        repeating-linear-gradient(-60deg, transparent 0 22px, rgba(31, 47, 56, 0.04) 22px 23px);
+}
+.map-slot-title { font-family: var(--serif); font-size: 22px; font-weight: 700; }
+.map-slot-note { color: var(--muted); max-width: 36em; }
+.wheel { display: flex; flex-wrap: wrap; gap: 0; margin-top: 12px; border-radius: 6px; overflow: hidden; }
+.wheel li { padding: 4px 14px; font-size: 13px; white-space: nowrap; }
+
+/* ---------- 公共版图 ---------- */
+.shared { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 20px; }
+@media (max-width: 1200px) { .shared { grid-template-columns: 1fr 1fr; } .shared-science { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .shared { grid-template-columns: 1fr; } }
+.shared-block h3:first-child { margin-top: 0; }
+
+.actions li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.actions li:last-child { border-bottom: none; }
+.cost { min-width: 3em; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 4px; padding: 0 6px; }
+.cost-power { color: var(--panel); background: var(--power); }
+.cost-book { color: var(--ink); background: var(--panel); border: 1px solid var(--rule); }
+.action-used { color: var(--muted); }
+.action-used > span:nth-child(2) { text-decoration: line-through; }
+.action-used .cost-power { background: var(--rule); }
+.used-mark { margin-left: auto; font-size: 12px; }
+
+.bonus li { padding: 4px 0; }
+.bonus-coins { margin-left: 10px; font-size: 13px; color: var(--muted); }
+
+.discipline { padding: 8px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 3em 1fr auto; gap: 10px; align-items: start; }
+.discipline:last-child { border-bottom: none; }
+.discipline-name { font-weight: 700; }
+.discipline-levels li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.discipline-levels .num { margin-left: auto; }
+.scholar-spaces { display: flex; gap: 4px; padding-top: 3px; }
+.scholar-space { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--muted); }
+
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.swatch-sm { width: 10px; height: 10px; }
+
+/* ---------- 玩家板 ---------- */
+.sheet { background: var(--panel); border: 2px solid; border-radius: 8px; overflow: hidden; }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-end; padding: 12px 16px; }
+.sheet-name { font-family: var(--serif); font-size: 22px; font-weight: 700; line-height: 1.2; }
+.sheet-faction { font-size: 13px; opacity: 0.9; }
+.sheet-vp { font-size: 14px; }
+.sheet-vp .num { font-size: 30px; font-family: var(--serif); margin-right: 2px; }
+.sheet-flag { padding: 4px 16px; font-size: 13px; background: var(--power-soft); }
+.sheet-body { padding: 8px 16px 16px; }
+
+.stock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+.stock dt { font-size: 12px; color: var(--muted); }
+.stock dd { font-size: 22px; line-height: 1.2; }
+.books { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.book { color: #F6F7F3; padding: 1px 8px; border-radius: 3px; }
+
+/* 能量碗：这一页的标志性元素 */
+.bowls-row { display: flex; gap: 14px; align-items: flex-end; }
+.bowl {
+    position: relative;
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    border: 2px solid var(--power);
+    background: var(--power-soft);
+    display: grid; place-items: center;
+}
+.bowl-ready { background: var(--power); }
+.bowl-ready .token { background: var(--panel); }
+.bowl-tokens { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; width: 48px; }
+.token { width: 8px; height: 8px; border-radius: 50%; background: var(--power); }
+.bowl-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.bowl-name { font-size: 12px; color: var(--muted); }
+.bowls-note { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.bowls-note strong { color: var(--power); font-variant-numeric: tabular-nums; }
+
+.bowls-compact .bowls-row { gap: 4px; }
+.bowls-compact .bowl { width: 28px; height: 28px; border-width: 1.5px; }
+.bowls-compact .bowl-name { display: none; }
+.bowl-count { font-size: 13px; color: var(--power); }
+.bowl-ready .bowl-count { color: var(--panel); }
+
+.science li { display: grid; grid-template-columns: 3em 1fr 2em; gap: 8px; align-items: center; }
+.science-track { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+.step { height: 10px; background: var(--rule); border-radius: 2px; }
+.step-key { margin-left: 4px; } /* 第 8 级起需要钥匙，前面留一道缝 */
+.science .num { text-align: right; }
+
+.tracks, .tiles { font-size: 14px; }
+.supply li { display: grid; grid-template-columns: 3.5em 1fr; align-items: center; padding: 2px 0; font-size: 14px; }
+.pips { display: flex; gap: 4px; }
+.pip { width: 12px; height: 12px; border-radius: 2px; background: var(--ink); }
+.pip-built { background: transparent; border: 1px solid var(--rule); }
+
+/* ---------- 其他玩家 ---------- */
+.opps { margin-top: 16px; display: grid; gap: 8px; }
+.opp { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; background: var(--panel); border-radius: 6px; }
+.opp-active { box-shadow: inset 3px 0 0 var(--ink); }
+.opp-name { font-weight: 600; }
+.opp-faction { margin-left: 8px; font-weight: 400; font-size: 13px; color: var(--muted); }
+.opp-tag { white-space: nowrap; margin-left: 8px; font-size: 12px; padding: 0 6px; border-radius: 3px; background: var(--power-soft); font-weight: 400; }
+.opp-stock { font-size: 13px; color: var(--muted); }
+.opp-vp { font-size: 13px; }
+.opp-vp .num { font-family: var(--serif); font-size: 20px; margin-right: 2px; }
+
+/* ---------- 底部待决策 ---------- */
+.pending {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 12px 24px;
+    background: var(--ink); color: var(--panel);
+    font-size: 15px;
+}
+.pending li { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.pending-who { color: #C7B8E6; font-weight: 600; }
+.pending-mine .pending-who { color: #FFFFFF; }
+.pending-buttons { display: flex; gap: 8px; margin-left: auto; }
+.pending button { font: inherit; padding: 4px 14px; border-radius: 4px; border: 1px solid var(--panel); background: transparent; color: var(--panel); }
+.pending button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) { .aoi-root * { transition: none !important; animation: none !important; } }

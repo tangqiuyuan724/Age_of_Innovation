@@ -21,6 +21,9 @@ export function Lobby() {
                     加入
                 </button>
             </p>
+            <p>
+                <a href="#aoi-preview">查看大创造时代界面预览（假数据）</a>
+            </p>
         </section>
     );
 }
