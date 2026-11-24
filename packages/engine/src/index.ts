@@ -25,13 +25,13 @@ export function createGame(seats: Seat[], target = 21): GameState {
 }
 
 export function activeSeat(state: GameState): Seat | null {
-    if (state.winner != null) return null;
+    if (state.winner !== null) return null;
     return state.turnOrder[state.activeIndex];
 }
 
 export function validateMove(state: GameState, seat: Seat, move: Move): RuleError | null {
     if (state.winner !== null) return "game-over";
-    if (activeSeat(state) != seat) return "not-your-turn";
+    if (activeSeat(state) !== seat) return "not-your-turn";
     if (!Number.isInteger(move.n) || move.n < 1 || move.n > 3) return "bad-amount";
     if (state.total + move.n > state.target) return "overshoot";
     return null;

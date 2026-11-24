@@ -64,7 +64,7 @@ export class GameRoom extends Room<{ state: RoomMeta }> {
 
             const { state, events } = applyMove(this.game, player.seat, msg.move);
             this.game = state;
-            if (state.winner != null) this.state.phase = "ended";
+            if (state.winner !== null) this.state.phase = "ended";
             this.syncMeta();
             this.broadcastSnapshot(events);
             return { version: state.version };
