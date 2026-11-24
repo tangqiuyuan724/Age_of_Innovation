@@ -6,3 +6,4 @@ dist
 .DS_Store
 ts-playground
 Images
+apps/frontend/public/game-assets/

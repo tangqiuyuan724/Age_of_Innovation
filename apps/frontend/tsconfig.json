@@ -9,6 +9,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "jsx": "react-jsx"

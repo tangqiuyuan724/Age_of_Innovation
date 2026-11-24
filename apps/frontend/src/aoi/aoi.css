@@ -1,4 +1,6 @@
-/* 大创造时代界面。颜色：玩家色 = 家园地形色；紫色只用于能量。 */
+/* 大创造时代界面（B 桌面式布局）
+   颜色规矩：玩家色 = 家园地形色；紫色只用于能量；其他一律是墨色和灰。
+   字体只用系统自带的中文字体，不从网上加载。 */
 
 body:has(.aoi-root) {
     max-width: none;
@@ -8,8 +10,8 @@ body:has(.aoi-root) {
 }
 
 .aoi-root {
-    --paper: #EDF0EA;
-    --panel: #F8F9F6;
+    --paper: #EDF0EA;     /* 桌面底色，地图放在这上面 */
+    --panel: #F8F9F6;     /* 侧栏和底栏 */
     --ink: #1F2F38;
     --muted: #5D6B70;
     --rule: #C9D0C8;
@@ -18,174 +20,323 @@ body:has(.aoi-root) {
     --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
     --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
 
-    min-height: 100vh;
-    padding: 16px 24px 96px;
-    box-sizing: border-box;
+    /* 桌面：一屏放下，整页不滚动。上：顶栏；中：地图 + 右侧公共版图（内容多时侧栏自己滚动）；下：玩家板，横跨整个宽度 */
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "top    top"
+        "map    side"
+        "bottom bottom";
     color: var(--ink);
     background: var(--paper);
-    font: 15px/1.6 var(--sans);
+    font: 14px/1.5 var(--sans);
 }
 
 .aoi-root *, .aoi-root *::before, .aoi-root *::after { box-sizing: border-box; }
-.aoi-root h2, .aoi-root h3, .aoi-root p, .aoi-root ul, .aoi-root ol, .aoi-root dl, .aoi-root dd { margin: 0; padding: 0; }
+/* 清掉浏览器默认的外边距。用 :where() 包起来，这条规则就没有"优先级"，后面任何一条类名规则都能覆盖它 */
+.aoi-root :where(h3, p, ul, ol, dl, dd) { margin: 0; padding: 0; }
 .aoi-root ul, .aoi-root ol { list-style: none; }
 .aoi-root .num { font-variant-numeric: tabular-nums; font-weight: 600; }
-.aoi-root h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 18px 0 8px; }
+.aoi-root h3 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
 .aoi-root a { color: var(--ink); }
-.aoi-root button:focus-visible, .aoi-root a:focus-visible { outline: 2px solid var(--power); outline-offset: 2px; }
-
-.preview-note { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-.preview-note a { margin-left: 8px; }
+.aoi-root button { font: inherit; color: inherit; }
+.aoi-root button:focus-visible, .aoi-root a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.icon { flex: none; display: block; }
 
 /* ---------- 顶栏 ---------- */
 .topbar {
+    grid-area: top;
     display: flex;
     align-items: center;
-    gap: 28px;
-    flex-wrap: wrap;
-    padding-bottom: 14px;
+    gap: 24px;
+    padding: 10px 20px;
     border-bottom: 1px solid var(--rule);
-    margin-bottom: 18px;
+    background: var(--panel);
 }
-.round { display: flex; align-items: baseline; gap: 12px; }
-.round-num { font-family: var(--serif); font-size: 30px; font-weight: 700; letter-spacing: 0.04em; }
-.round-phase { font-size: 15px; color: var(--muted); }
-.order { display: flex; gap: 8px; }
-.order-chip { padding: 3px 12px; border-radius: 999px; font-size: 14px; opacity: 0.72; }
-.order-active { opacity: 1; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
-.rounds { display: flex; gap: 4px; margin-left: auto; }
+.round { display: flex; flex-direction: column; line-height: 1.2; flex: none; }
+.round-num { font-family: var(--serif); font-size: 26px; font-weight: 700; letter-spacing: 0.04em; }
+.round-sub { font-size: 12px; color: var(--muted); }
+
+/* 计分板块：一排小格，像版图上的回合轨 */
+.rounds { display: flex; gap: 3px; flex: none; }
 .rounds li {
-    width: 26px; height: 26px; display: grid; place-items: center;
-    border: 1px solid var(--rule); border-radius: 4px; font-size: 13px; color: var(--muted);
+    width: 46px; padding: 3px 0 4px;
+    display: flex; flex-direction: column; align-items: center; line-height: 1.2;
+    border: 1px solid var(--rule); border-radius: 3px;
+    font-size: 12px; color: var(--muted);
 }
-.rounds .rounds-past { background: var(--rule); color: var(--panel); border-color: var(--rule); }
-.rounds .rounds-now { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.rounds-tile { font-size: 10px; }
+.rounds .rounds-now { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+.rounds .rounds-past { opacity: 0.5; }
+.rounds .rounds-final { width: 52px; border-style: dashed; }
 
-/* ---------- 桌面布局 ---------- */
-.table { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
-@media (max-width: 960px) { .table { grid-template-columns: 1fr; } .table-side { order: -1; } }
-
-.map-slot {
-    min-height: 340px;
-    border: 1px dashed var(--muted);
-    border-radius: 6px;
-    padding: 24px;
-    display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px;
-    background:
-        repeating-linear-gradient(60deg, transparent 0 22px, rgba(31, 47, 56, 0.04) 22px 23px),
-        repeating-linear-gradient(-60deg, transparent 0 22px, rgba(31, 47, 56, 0.04) 22px 23px);
+.seats { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.seat {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 10px;
+    align-items: center;
+    min-width: 200px;
+    padding: 6px 12px 6px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper);
+    box-shadow: inset 5px 0 0 var(--seat-color);   /* 左边一条玩家色 */
+    text-align: left;
+    cursor: pointer;
 }
-.map-slot-title { font-family: var(--serif); font-size: 22px; font-weight: 700; }
-.map-slot-note { color: var(--muted); max-width: 36em; }
-.wheel { display: flex; flex-wrap: wrap; gap: 0; margin-top: 12px; border-radius: 6px; overflow: hidden; }
-.wheel li { padding: 4px 14px; font-size: 13px; white-space: nowrap; }
+.seat:hover { border-color: var(--muted); }
+.seat-viewed { background: #FFFFFF; border-color: var(--ink); box-shadow: inset 5px 0 0 var(--seat-color), 0 0 0 1px var(--ink); }
+.seat-passed { opacity: 0.6; }
+.seat-order {
+    grid-column: 1; grid-row: 1 / 3;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 12px; border: 1px solid var(--muted); color: var(--muted);
+}
+.seat-name { grid-column: 2; grid-row: 1; font-weight: 600; font-size: 15px; line-height: 1.3; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.seat-me { font-size: 11px; font-weight: 600; padding: 0 5px; border-radius: 3px; background: var(--ink); color: var(--panel); }
+.seat-faction { grid-column: 2; grid-row: 2; font-size: 12px; line-height: 1.3; color: var(--muted); white-space: nowrap; }
+.seat-vp { grid-column: 3; grid-row: 1 / 3; justify-self: end; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.seat-vp .num { font-family: var(--serif); font-size: 22px; color: var(--ink); margin-right: 1px; }
+.seat-status { font-size: 11px; font-weight: 400; padding: 0 6px; border-radius: 3px; border: 1px solid var(--muted); color: var(--muted); }
+.seat-status-active { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+.topbar-back { font-size: 13px; color: var(--muted) !important; white-space: nowrap; }
 
-/* ---------- 公共版图 ---------- */
-.shared { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 20px; }
-@media (max-width: 1200px) { .shared { grid-template-columns: 1fr 1fr; } .shared-science { grid-column: 1 / -1; } }
-@media (max-width: 640px) { .shared { grid-template-columns: 1fr; } }
-.shared-block h3:first-child { margin-top: 0; }
-
-.actions li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
-.actions li:last-child { border-bottom: none; }
-.cost { min-width: 3em; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 4px; padding: 0 6px; }
-.cost-power { color: var(--panel); background: var(--power); }
-.cost-book { color: var(--ink); background: var(--panel); border: 1px solid var(--rule); }
-.action-used { color: var(--muted); }
-.action-used > span:nth-child(2) { text-decoration: line-through; }
-.action-used .cost-power { background: var(--rule); }
-.used-mark { margin-left: auto; font-size: 12px; }
-
-.bonus li { padding: 4px 0; }
-.bonus-coins { margin-left: 10px; font-size: 13px; color: var(--muted); }
-
-.discipline { padding: 8px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 3em 1fr auto; gap: 10px; align-items: start; }
-.discipline:last-child { border-bottom: none; }
-.discipline-name { font-weight: 700; }
-.discipline-levels li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
-.discipline-levels .num { margin-left: auto; }
-.scholar-spaces { display: flex; gap: 4px; padding-top: 3px; }
-.scholar-space { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--muted); }
-
-.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; flex: none; }
-.swatch-sm { width: 10px; height: 10px; }
-
-/* ---------- 玩家板 ---------- */
-.sheet { background: var(--panel); border: 2px solid; border-radius: 8px; overflow: hidden; }
-.sheet-head { display: flex; justify-content: space-between; align-items: flex-end; padding: 12px 16px; }
-.sheet-name { font-family: var(--serif); font-size: 22px; font-weight: 700; line-height: 1.2; }
-.sheet-faction { font-size: 13px; opacity: 0.9; }
-.sheet-vp { font-size: 14px; }
-.sheet-vp .num { font-size: 30px; font-family: var(--serif); margin-right: 2px; }
-.sheet-flag { padding: 4px 16px; font-size: 13px; background: var(--power-soft); }
-.sheet-body { padding: 8px 16px 16px; }
-
-.stock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
-.stock dt { font-size: 12px; color: var(--muted); }
-.stock dd { font-size: 22px; line-height: 1.2; }
-.books { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; font-size: 13px; color: var(--muted); }
-.book { color: #F6F7F3; padding: 1px 8px; border-radius: 3px; }
-
-/* 能量碗：这一页的标志性元素 */
-.bowls-row { display: flex; gap: 14px; align-items: flex-end; }
-.bowl {
+/* ---------- 地图 ---------- */
+.map-area {
+    grid-area: map;
     position: relative;
-    width: 76px; height: 76px;
-    border-radius: 50%;
-    border: 2px solid var(--power);
-    background: var(--power-soft);
+    min-height: 0;
+    padding: 10px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.map-frame { flex: 1; min-height: 0; width: 100%; }
+.hexmap { width: 100%; height: 100%; display: block; }
+.hexmap text { text-anchor: middle; pointer-events: none; }
+.hex-label { font-size: 10px; opacity: 0.72; font-family: var(--sans); }
+.reach, .badge { pointer-events: none; }
+.reach polygon { stroke-width: 2; stroke-dasharray: 5 4; }
+.reach text { font-size: 11px; font-weight: 600; font-family: var(--sans); }
+.badge text { font-family: var(--serif); font-weight: 700; dominant-baseline: central; }
+
+.map-legend {
+    position: absolute; left: 20px; bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+}
+.legend-dash { width: 18px; height: 12px; border: 2px dashed var(--ink); border-radius: 2px; }
+.legend-sep { margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--rule); }
+
+/* 待决定提示条：在地图正上方，占一行，不盖住格子 */
+.pending { max-width: 100%; display: grid; gap: 6px; }
+.pending li {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    padding: 8px 10px 8px 14px;
+    border-radius: 4px;
+    background: var(--ink); color: var(--panel);
+}
+.pending-who { font-weight: 600; color: #C9D3D8; white-space: nowrap; }
+.pending-mine .pending-who { color: #FFFFFF; }
+.pending-buttons { display: flex; gap: 6px; margin-left: auto; }
+.pending button { padding: 2px 14px; border-radius: 3px; border: 1px solid var(--panel); background: transparent; color: var(--panel); }
+.pending button:first-child { background: var(--panel); color: var(--ink); }
+.pending button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ---------- 右侧：公共版图 ---------- */
+.shared {
+    grid-area: side;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 16px;
+    border-left: 1px solid var(--rule);
+    background: var(--panel);
+    display: grid; align-content: start; gap: 16px;
+}
+.shared-note { margin-top: 6px; font-size: 11px; color: var(--muted); }
+
+/* 学科：4 条竖着的轨道，上面 12 级、下面 0 级 */
+.sci { display: grid; grid-template-columns: 16px repeat(4, minmax(0, 1fr)); column-gap: 6px; }
+.sci-axis { padding-top: 22px; }
+.sci-axis li, .sci-track ol li { height: 15px; }
+.sci-axis li { font-size: 10px; line-height: 15px; color: var(--muted); text-align: right; display: flex; justify-content: flex-end; align-items: center; }
+.sci-axis .icon { width: 12px; height: 12px; }
+.sci-name { height: 22px; text-align: center; font-size: 13px; font-weight: 600; color: var(--d); }
+.sci-track ol li {
+    display: flex; justify-content: center; align-items: center; gap: 2px;
+    background: color-mix(in srgb, var(--d) 14%, transparent);
+    border-bottom: 1px solid var(--panel);
+}
+.sci-track ol li:first-child { background: color-mix(in srgb, var(--d) 34%, transparent); }   /* 12 级 */
+.sci-key-row { border-top: 2px solid var(--ink); }   /* 7 级上沿：再往上走要钥匙 */
+.marker { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--panel); }
+.scholar-spaces { display: flex; justify-content: center; gap: 3px; margin-top: 6px; }
+.scholar-space { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--muted); }
+.scholar-space-taken { border-color: var(--ink); }
+
+/* 行动格、板块格 */
+.tiles { display: grid; gap: 6px; }
+.tiles-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tile {
+    position: relative;
+    min-height: 62px;
+    padding: 6px 7px 7px;
+    display: flex; flex-direction: column; gap: 4px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper);
+    font-size: 12px; line-height: 1.35;
+}
+.cost-power {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--power); color: #FFFFFF; font-size: 13px;
+}
+.cost-book { display: flex; align-items: center; gap: 2px; font-size: 13px; }
+.cost-book .icon { width: 15px; height: 15px; }
+.tile-used { background: transparent; border-style: dashed; color: var(--muted); }
+.tile-used .tile-text { text-decoration: line-through; }
+.tile-used .cost-power { background: var(--rule); }
+.tile-stamp { position: absolute; top: 7px; right: 7px; font-size: 11px; }
+.tile-bonus { min-height: 48px; }
+.bonus-coins { display: flex; gap: 2px; }
+.bonus-coins .icon { width: 14px; height: 14px; }
+
+.round-scores li { display: flex; align-items: center; gap: 10px; padding: 3px 0; border-bottom: 1px solid var(--rule); font-size: 12px; }
+.round-scores li:last-child { border-bottom: none; }
+.round-scores li > :first-child { width: 18px; text-align: center; color: var(--muted); }
+.rs-past { color: var(--muted); text-decoration: line-through; }
+.rs-now { font-weight: 600; }
+.rs-tag { margin-left: auto; font-size: 11px; padding: 0 6px; border-radius: 3px; background: var(--ink); color: var(--panel); font-weight: 400; }
+
+/* ---------- 底部：玩家板 + 行动区 ---------- */
+.bottom {
+    grid-area: bottom;
+    display: flex;
+    flex-wrap: wrap;
+    border-top: 4px solid var(--seat-color);   /* 正在查看谁，就是谁的颜色 */
+    background: var(--panel);
+}
+/* 玩家板各栏不缩小，宽度不够时整块行动区换到下一行 */
+.sheet { flex: none; display: flex; }
+.sheet-id { flex: none; width: 140px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.sheet-name { font-size: 16px; font-weight: 700; }
+.sheet-faction { font-size: 12px; line-height: 1.45; opacity: 0.9; }
+.sheet-vp { margin-top: auto; font-size: 13px; }
+.sheet-vp .num { font-family: var(--serif); font-size: 30px; line-height: 1; }
+.sheet-col { flex: none; padding: 12px 16px; border-left: 1px solid var(--rule); }
+.sheet-id + .sheet-col { border-left: none; }
+
+.stock { display: grid; grid-template-columns: auto auto; gap: 5px 16px; }
+.stock li { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stock .num { font-size: 16px; min-width: 1.2em; }
+.stock-name { font-size: 12px; color: var(--muted); }
+.stock-name small { font-size: 11px; }
+.books { display: flex; gap: 8px; margin-top: 8px; }
+.books li { display: flex; align-items: center; gap: 2px; font-size: 13px; }
+.book-none { opacity: 0.35; }
+
+/* 能量碗：底栏里用小一号 */
+.bowls-row { display: flex; gap: 10px; align-items: flex-end; }
+.bowl {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid var(--power); background: var(--power-soft);
     display: grid; place-items: center;
 }
 .bowl-ready { background: var(--power); }
 .bowl-ready .token { background: var(--panel); }
-.bowl-tokens { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; width: 48px; }
-.token { width: 8px; height: 8px; border-radius: 50%; background: var(--power); }
-.bowl-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.bowl-name { font-size: 12px; color: var(--muted); }
-.bowls-note { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.bowl-tokens { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; width: 40px; }
+.token { width: 7px; height: 7px; border-radius: 50%; background: var(--power); }
+.bowl-wrap { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.bowl-name { font-size: 11px; color: var(--muted); }
+.bowls-note { margin-top: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .bowls-note strong { color: var(--power); font-variant-numeric: tabular-nums; }
-
-.bowls-compact .bowls-row { gap: 4px; }
 .bowls-compact .bowl { width: 28px; height: 28px; border-width: 1.5px; }
 .bowls-compact .bowl-name { display: none; }
 .bowl-count { font-size: 13px; color: var(--power); }
 .bowl-ready .bowl-count { color: var(--panel); }
 
-.science li { display: grid; grid-template-columns: 3em 1fr 2em; gap: 8px; align-items: center; }
-.science-track { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
-.step { height: 10px; background: var(--rule); border-radius: 2px; }
-.step-key { margin-left: 4px; } /* 第 8 级起需要钥匙，前面留一道缝 */
-.science .num { text-align: right; }
-
-.tracks, .tiles { font-size: 14px; }
-.supply li { display: grid; grid-template-columns: 3.5em 1fr; align-items: center; padding: 2px 0; font-size: 14px; }
-.pips { display: flex; gap: 4px; }
-.pip { width: 12px; height: 12px; border-radius: 2px; background: var(--ink); }
+.supply li { display: grid; grid-template-columns: 3em auto; align-items: center; height: 19px; font-size: 12px; }
+.supply-name { color: var(--muted); }
+.pips { display: flex; gap: 3px; }
+.pip { width: 11px; height: 11px; border-radius: 2px; background: var(--ink); }
 .pip-built { background: transparent; border: 1px solid var(--rule); }
 
-/* ---------- 其他玩家 ---------- */
-.opps { margin-top: 16px; display: grid; gap: 8px; }
-.opp { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; background: var(--panel); border-radius: 6px; }
-.opp-active { box-shadow: inset 3px 0 0 var(--ink); }
-.opp-name { font-weight: 600; }
-.opp-faction { margin-left: 8px; font-weight: 400; font-size: 13px; color: var(--muted); }
-.opp-tag { white-space: nowrap; margin-left: 8px; font-size: 12px; padding: 0 6px; border-radius: 3px; background: var(--power-soft); font-weight: 400; }
-.opp-stock { font-size: 13px; color: var(--muted); }
-.opp-vp { font-size: 13px; }
-.opp-vp .num { font-family: var(--serif); font-size: 20px; margin-right: 2px; }
+.facts { display: grid; grid-template-columns: auto auto; gap: 2px 18px; font-size: 12px; }
+.facts div { display: flex; gap: 8px; white-space: nowrap; }
+.facts dt { color: var(--muted); min-width: 4em; }
 
-/* ---------- 底部待决策 ---------- */
-.pending {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 12px 24px;
-    background: var(--ink); color: var(--panel);
-    font-size: 15px;
+.act { flex: 1 1 280px; padding: 12px 16px; border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: 7px; }
+.act-title { font-weight: 600; }
+.act-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 5px; }
+.act-buttons button {
+    width: 100%; padding: 4px 6px;
+    border: 1px solid var(--ink); border-radius: 3px; background: #FFFFFF;
+    font-size: 12px;
 }
-.pending li { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-.pending-who { color: #C7B8E6; font-weight: 600; }
-.pending-mine .pending-who { color: #FFFFFF; }
-.pending-buttons { display: flex; gap: 8px; margin-left: auto; }
-.pending button { font: inherit; padding: 4px 14px; border-radius: 4px; border: 1px solid var(--panel); background: transparent; color: var(--panel); }
-.pending button:disabled { opacity: 0.5; cursor: not-allowed; }
+.act-buttons button:disabled { opacity: 0.45; cursor: not-allowed; }
+.act-free button { border-style: dashed; }
+.act-line { font-size: 12px; color: var(--muted); }
+.act-later { font-size: 12px; color: var(--muted); padding: 6px 8px; border: 1px dashed var(--rule); border-radius: 3px; }
+.act-back {
+    align-self: flex-start; padding: 4px 14px; border-radius: 3px;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--panel) !important; cursor: pointer;
+}
+.act-readonly { background: #FFFFFF; }
+
+/* ---------- 中等宽度（小笔记本）：玩家板收紧一点，保证和行动区排在同一行 ---------- */
+@media (max-width: 1359px) {
+    .sheet-id { width: 112px; }
+    .sheet-col { padding: 12px 12px; }
+    .stock-name { display: none; }          /* 只留图标和数字，鼠标悬停能看到名字 */
+    .stock { column-gap: 12px; }
+    .facts { column-gap: 12px; }
+    .act { flex-basis: 240px; }
+    .rounds li { width: 30px; }
+    .rounds .rounds-final { width: 36px; }
+    .rounds-tile { display: none; }         /* 计分板块编号只在宽屏显示，悬停能看到 */
+    .seat { min-width: 180px; }
+}
+
+/* ---------- 矮屏幕：整页改成可以上下滚动，地图保持一个能看清的高度 ---------- */
+@media (max-height: 840px) and (min-width: 1141px) {
+    .aoi-root { height: auto; min-height: 100vh; }
+    .map-frame { flex: none; height: 560px; }
+}
+
+/* ---------- 窄屏：从上到下排成一列，可以滚动 ---------- */
+@media (max-width: 1140px) {
+    .aoi-root {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "top" "map" "bottom" "side";
+    }
+    .topbar { flex-wrap: wrap; gap: 12px; }
+    .seats { margin-left: 0; }
+    .map-area { padding: 10px 8px 12px; }
+    .map-frame { overflow-x: auto; }        /* 手机上地图太小，保持最小宽度，左右滑动看 */
+    .hexmap { height: auto; min-width: 720px; }
+    .map-legend { position: static; align-self: flex-start; flex-wrap: wrap; }
+    .legend-sep { margin-left: 0; padding-left: 0; border-left: none; }
+    .sheet { flex: 1 1 100%; flex-wrap: wrap; }
+    .sheet-id { width: 100%; flex-direction: row; align-items: baseline; gap: 14px; }
+    .sheet-vp { margin: 0 0 0 auto; }
+    .sheet-id + .sheet-col { border-left: none; }
+    .act { border-left: none; border-top: 1px solid var(--rule); }
+    .shared { border-left: none; border-top: 1px solid var(--rule); }
+}
+@media (max-width: 640px) {
+    .seat { min-width: 0; flex: 1 1 100%; }
+    .seats { width: 100%; }
+    .seats li { flex: 1 1 100%; display: flex; }
+    .sheet-col { border-left: none; border-top: 1px solid var(--rule); width: 100%; }
+    .pending li { font-size: 13px; }
+}
 
 @media (prefers-reduced-motion: reduce) { .aoi-root * { transition: none !important; animation: none !important; } }

@@ -11,6 +11,9 @@ export const TERRAIN_COLOR: Record<Terrain, string> = {
     wasteland: "#B4463A",
 };
 
+/** 河流：比湖泊浅得多，一眼能分开"河"和"湖泊地形" */
+export const WATER_COLOR = "#CFE0E6";
+
 /** 深色地形上的文字要用浅色 */
 export function inkOn(t: Terrain): string {
     return t === "swamp" || t === "forest" || t === "wasteland" || t === "plains" ? "#F6F7F3" : "#1F2F38";
