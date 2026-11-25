@@ -32,7 +32,6 @@ export function validateDecide(state: GameState, seat: Seat, id: string, choice:
         case "spades":
             if ("skip" in choice) return d.seat === seat ? null : "not-your-decision";
             return validateSpades(state, seat, choice.hex, choice.build);
-        // 下面几种在 M1-5、M1-6 实现
         case "bridge":
         // case "scienceLevels":
         // case "trackReward":

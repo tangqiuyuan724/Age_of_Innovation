@@ -1,22 +1,29 @@
+import { useState } from "react";
 import {
-    BRIDGES_TOTAL, DISCIPLINES, MAX_INNOVATIONS,
+    BRIDGES_TOTAL, DISCIPLINES, MAX_INNOVATIONS, PALACE_TILE_INCOME,
     type BuildingType, type PlayerState,
 } from "@aoi/engine/aoi";
 import { DISCIPLINE_COLOR, TERRAIN_COLOR, inkOn } from "./colors.ts";
-import { BOOK_NAME, BUILDING_TOTAL, STRUCTURE_NAME, TERRAIN_NAME, factionName } from "./labels.ts";
+import { describeBundle } from "./describe.ts";
+import { BONUS_TILE_LABEL, BOOK_NAME, BUILDING_TOTAL, COMPETENCY_LABEL, STRUCTURE_NAME, TERRAIN_NAME, factionName } from "./labels.ts";
 import { BookIcon, CoinIcon, KeyIcon, ScholarIcon, ToolIcon } from "./icons.tsx";
 import { PowerBowls } from "./PowerBowls.tsx";
+import { TileImage } from "./TileImage.tsx";
 
 const BUILDINGS: BuildingType[] = ["workshop", "guild", "school", "university", "palace"];
 
 /** 底部的玩家板：正在查看的那位玩家的全部家当，横着排开 */
 export function PlayerSheet({ p, name, isMe }: { p: PlayerState; name: string; isMe: boolean }) {
     const color = TERRAIN_COLOR[p.homeTerrain];
+    // 点"看规划板"时，在页面中间盖一层大图（没有实物图时这个按钮不起作用，见下面）
+    const [showPlanning, setShowPlanning] = useState(false);
+
     return (
         <section className="sheet" aria-label={`${name}的玩家板`}>
             <div className="sheet-id" style={{ background: color, color: inkOn(p.homeTerrain) }}>
                 <p className="sheet-name">{name}{isMe ? "（你）" : ""}</p>
                 <p className="sheet-faction">{factionName(p.faction)}<br />家园地形：{TERRAIN_NAME[p.homeTerrain]}</p>
+                <button type="button" className="sheet-planning" onClick={() => setShowPlanning(true)}>看规划板</button>
                 <p className="sheet-vp"><span className="num">{p.vp}</span> 分</p>
             </div>
 
@@ -66,13 +73,45 @@ export function PlayerSheet({ p, name, isMe }: { p: PlayerState; name: string; i
                     <div><dt>航行</dt><dd><span className="num">{p.sailing}</span> 级</dd></div>
                     <div><dt>改造</dt><dd><span className="num">{p.terraforming}</span> 级</dd></div>
                     <div><dt>桥</dt><dd>剩 <span className="num">{p.bridges}</span> / {BRIDGES_TOTAL}</dd></div>
-                    <div><dt>宫殿</dt><dd>{p.palaceTile === null ? "还没有" : `#${p.palaceTile}`}</dd></div>
+                    <div>
+                        <dt>宫殿</dt>
+                        <dd title={p.palaceTile === null ? undefined : `收入 ${describeBundle(PALACE_TILE_INCOME[p.palaceTile])}`}>
+                            {p.palaceTile === null ? "还没有" : `#${p.palaceTile}`}
+                        </dd>
+                    </div>
                     <div><dt>创新</dt><dd><span className="num">{p.innovations.length}</span> / {MAX_INNOVATIONS}</dd></div>
-                    <div><dt>能力</dt><dd>{p.competencies.length === 0 ? "无" : p.competencies.join("、")}</dd></div>
+                    <div>
+                        <dt>能力</dt>
+                        <dd>
+                            {p.competencies.length === 0 ? "无" : p.competencies.map((c, i) => (
+                                <span key={c} title={COMPETENCY_LABEL[c].text}>{i > 0 && "、"}{COMPETENCY_LABEL[c].short}</span>
+                            ))}
+                        </dd>
+                    </div>
                     <div><dt>城市</dt><dd>{p.cityTiles.length === 0 ? "无" : p.cityTiles.join("、")}</dd></div>
-                    <div><dt>回合奖励</dt><dd>{p.bonusTile ?? "无"}</dd></div>
+                    <div>
+                        <dt>回合奖励</dt>
+                        <dd title={p.bonusTile ? BONUS_TILE_LABEL[p.bonusTile].text : undefined}>
+                            {p.bonusTile ? BONUS_TILE_LABEL[p.bonusTile].short : "无"}
+                        </dd>
+                    </div>
                 </dl>
             </div>
+
+            {showPlanning && (
+                <div
+                    className="overlay" role="dialog" aria-label={`${name}的规划板`}
+                    onClick={() => setShowPlanning(false)}
+                    onKeyDown={(e) => { if (e.key === "Escape") setShowPlanning(false); }}
+                >
+                    <TileImage
+                        kind="planning" id={p.planning} alt={`${TERRAIN_NAME[p.planning]}规划板`} className="img-planning"
+                        fallback={<p className="overlay-note">没有找到规划板的图片。在仓库根目录运行 python3 tools/assets/make_game_assets.py 生成。</p>}
+                    />
+                    {/* autoFocus：打开时焦点直接落在关闭按钮上，用键盘的人按回车或 Esc 就能关 */}
+                    <button type="button" className="overlay-close" autoFocus>关闭（点任意位置也可以）</button>
+                </div>
+            )}
         </section>
     );
 }

@@ -19,7 +19,6 @@ export * from "./leech.js";
 export * from "./endturn.js";
 export * from "./decide.js";
 export * from "./move.js";
-export * from "./content/competencies.js";
 export * from "./science.js";
 export * from "./scholar.js";
 export * from "./competency.js";

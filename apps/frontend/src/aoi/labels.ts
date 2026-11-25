@@ -1,8 +1,8 @@
 // 界面上的中文文案。引擎只用英文 id，翻译统一放在这里。
 // 派系、地形的中文名照中文版配件；学科的中文名还是暂定译名。
 import type {
-    BookActionId, BookColor, BuildingType, Decision, Discipline, FactionId, Phase,
-    PowerActionId, RuleError, StructureType, Terrain,
+    BonusTileId, BookActionId, BookColor, BuildingType, CompetencyId, ConversionId, Discipline, DraftCategory,
+    FactionId, Phase, PowerActionId, RuleError, StructureType, Terrain,
 } from "@aoi/engine/aoi";
 
 export const TERRAIN_NAME: Record<Terrain, string> = {
@@ -88,25 +88,59 @@ export const RULE_ERROR_TEXT: Record<RuleError, string> = {
     "bad-move": "操作格式不对",
 };
 
-/** 把一条待决策写成一句话，name 用来把座位号换成昵称 */
-export function describeDecision(d: Decision, name: (seat: number) => string): string {
-    switch (d.kind) {
-        case "pickSet": return "选择开局组合（派系、规划板、回合奖励板块）";
-        case "initialWorkshop": return "放置一个初始工坊";
-        case "leech":
-            return `${name(d.from)}在旁边建造：可以获得 ${d.power} 点能量，扣 ${d.vpCost} 分`;
-        case "spades": return `使用 ${d.spades} 把免费铲子${d.canBuild ? "，可以顺带建工坊" : ""}`;
-        case "bridge": return "选择桥的位置";
-        case "scienceLevels": return `选择一门学科前进 ${d.levels} 级`;
-        case "competency": return "选择一个能力板块";
-        case "palaceTile": return "选择一个宫殿板块";
-        case "cityTile": return "选择一个城市板块";
-        case "bookColor": return `获得 ${d.count} 本书，选择颜色`;
-        case "draftPick": return "轮抽：从规划板、派系、回合奖励板块、宫殿板块里拿一样";
-        default: {
-            // 穷尽检查：接口里新增了一种决策而这里没处理时，这一行会报类型错误
-            const unhandled: never = d;
-            return unhandled;
-        }
-    }
+/**
+ * 按钮不能点的原因。界面上的按钮发出的指令格式一定是对的，
+ * 所以引擎返回 bad-move 只有一种可能：这种指令引擎还没实现（比如 M1-5 时的能量行动）
+ */
+export function reasonText(e: RuleError): string {
+    return e === "bad-move" ? "引擎还没实现" : RULE_ERROR_TEXT[e];
 }
+
+/**
+ * 12 种能力板块：short 是放在小格子里的短名字（自己起的，不是官方译名），text 是效果。
+ * 效果在 M3 实现，现在只是给人看的说明
+ */
+export const COMPETENCY_LABEL: Record<CompetencyId, { short: string; text: string }> = {
+    incomeBookPower: { short: "书和能量", text: "收入：1 本任选颜色的书、1 能量" },
+    bonusToolVpCoins: { short: "工具、分、金币", text: "立即：1 工具、5 分、2 金币" },
+    passLowestScience: { short: "最低学科", text: "pass 时：按自己最低的学科等级得分" },
+    incomeToolLevel: { short: "工具和学科", text: "收入：1 工具，任选学科前进 1 级" },
+    bonusSpades: { short: "两把铲子", text: "立即：一次改造并建造，带 2 把免费铲子" },
+    tower: { short: "塔楼", text: "立即：建一座中立塔楼；收入 2 能量、2 金币" },
+    incomeVpCoins: { short: "分和金币", text: "收入：3 分、2 金币" },
+    passCityVp: { short: "城市得分", text: "pass 时：每个城市板块 2 分" },
+    borderWorkshopVp: { short: "边缘工坊", text: "在版图边缘的格子上建工坊得 3 分" },
+    actionPower4: { short: "4 能量", text: "特殊行动：获得 4 能量" },
+    scholarVp: { short: "学者得分", text: "派学者（含退回学者）得 2 分" },
+    annexes: { short: "附楼", text: "立即：2 个中立附楼" },
+};
+
+/** 10 个回合奖励板块：short 是短名字（自己起的），text 是板块上印的内容 */
+export const BONUS_TILE_LABEL: Record<BonusTileId, { short: string; text: string }> = {
+    riverWorkshop: { short: "河边工坊", text: "在河边建工坊得 2 分；航行范围 +1" },
+    scholarSend: { short: "派学者", text: "派学者得 2 分；收入 1 学者" },
+    guildBuild: { short: "建行会", text: "建行会得 3 分；收入 3 能量" },
+    bigBuildingsPass: { short: "大建筑", text: "pass 时每座大学、宫殿得 4 分；收入 1 工具" },
+    spadeAction: { short: "铲子", text: "特殊行动：1 铲改造并建造；收入 1 本任选颜色的书" },
+    bridgeAction: { short: "建桥", text: "特殊行动：免费建桥；收入 1 本任选颜色的书" },
+    levelAction: { short: "学科", text: "特殊行动：任选学科前进 1 级；收入 2 工具" },
+    schoolsPass: { short: "学校", text: "pass 时每座学校任选学科前进 1 级；收入 4 金币" },
+    power4coins2: { short: "能量和金币", text: "收入 4 能量、2 金币" },
+    coins6: { short: "6 金币", text: "收入 6 金币" },
+};
+
+/** 7 种资源转换 */
+export const CONVERSION_LABEL: Record<ConversionId, string> = {
+    power5ToScholar: "5 能量 → 1 学者",
+    power5ToBook: "5 能量 → 1 本书",
+    power3ToTool: "3 能量 → 1 工具",
+    power1ToCoin: "1 能量 → 1 金币",
+    scholarToTool: "1 学者 → 1 工具",
+    toolToCoin: "1 工具 → 1 金币",
+    bookToCoin: "1 本书 → 1 金币",
+};
+
+/** 轮抽的 4 类东西 */
+export const DRAFT_CATEGORY_NAME: Record<DraftCategory, string> = {
+    planning: "规划板", faction: "派系", bonusTile: "回合奖励板块", palaceTile: "宫殿板块",
+};

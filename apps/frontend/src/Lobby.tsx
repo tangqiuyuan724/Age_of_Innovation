@@ -24,6 +24,9 @@ export function Lobby() {
             <p>
                 <a href="#aoi-preview">查看大创造时代界面预览（假数据）</a>
             </p>
+            <p>
+                <a href="#aoi-local">大创造时代本地试玩（一台电脑轮流操作，用你写的引擎）</a>
+            </p>
         </section>
     );
 }

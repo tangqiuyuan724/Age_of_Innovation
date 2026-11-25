@@ -26,10 +26,14 @@ function player(p: Partial<PlayerState> & Pick<PlayerState, "seat" | "faction" |
     };
 }
 
+/** 朋友A 的城市 */
+const CITY_HEXES: HexId[] = ["B1", "C1", "D1", "D2"];
+
 /**
  * 地图上的建筑。和下面每位玩家的 buildingsLeft 对得上：
  *  - 小唐（平原）：工坊 E1、E4（E4 原来是沙漠，改造过），行会 G3，学校 E3
- *  - 朋友A（山脉）：工坊 C1（原来是荒地），行会 D2（刚升级，挨着小唐的学校，所以小唐有一次吸能量的机会），宫殿 B1，一座桥 B1—A3
+ *  - 朋友A（山脉）：工坊 C1（原来是荒地）、D1（原来是沙漠），行会 D2（刚升级，挨着小唐的学校，所以小唐有一次吸能量的机会），
+ *    宫殿 B1，一座桥 B1—A3。B1、C1、D1、D2 连在一起，能量值 3 + 1 + 1 + 2 = 7，组成了一个城市
  *  - 朋友B（湖泊）：工坊 F12、B11，行会 E10（航行 2 级，隔两格河也能到）
  */
 function mockHexes(): Record<HexId, HexState> {
@@ -37,7 +41,7 @@ function mockHexes(): Record<HexId, HexState> {
     const put = (id: HexId, owner: Seat, type: StructureType, terraformedTo?: Terrain) => {
         hexes[id] = {
             terrain: terraformedTo ?? hexes[id].terrain,
-            structure: { owner, type, neutral: false, annex: false, city: null },
+            structure: { owner, type, neutral: false, annex: false, city: CITY_HEXES.includes(id) ? 0 : null },
         };
     };
     put("E1", 0, "workshop");
@@ -45,6 +49,7 @@ function mockHexes(): Record<HexId, HexState> {
     put("G3", 0, "guild");
     put("E3", 0, "school");
     put("C1", 1, "workshop", "mountain");
+    put("D1", 1, "workshop", "mountain");
     put("D2", 1, "guild");
     put("B1", 1, "palace");
     put("F12", 2, "workshop");
@@ -66,7 +71,7 @@ export const MOCK_STATE: GameState = {
     pending: [{ id: "d-41", seat: 0, kind: "leech", from: 1, power: 2, vpCost: 1 }],
     hexes: mockHexes(),
     bridges: [{ owner: 1, a: "B1", b: "A3" }],
-    cities: [],
+    cities: [{ id: 0, owner: 1, hexes: CITY_HEXES, tile: null }],
     players: [
         player({
             seat: 0, faction: "philosophers", homeTerrain: "plains",
@@ -79,11 +84,11 @@ export const MOCK_STATE: GameState = {
         }),
         player({
             seat: 1, faction: "moles", homeTerrain: "mountain",
-            vp: 31, coins: 2, tools: 5, scholars: 0, scholarsInSupply: 5,
+            vp: 31, coins: 2, tools: 5, scholars: 0, scholarsInSupply: 5, keys: 1,
             books: { banking: 0, law: 0, engineering: 2, medicine: 1 },
             power: [0, 6, 6], terraforming: 2, bridges: 2,
             science: { banking: 0, law: 1, engineering: 6, medicine: 2 },
-            buildingsLeft: { workshop: 8, guild: 3, school: 3, university: 1, palace: 0 },
+            buildingsLeft: { workshop: 7, guild: 3, school: 3, university: 1, palace: 0 },
             palaceTile: 9, bonusTile: "guildBuild",
         }),
         player({

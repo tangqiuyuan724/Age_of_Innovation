@@ -1,7 +1,7 @@
-import type { GameState, MapGeometry, Seat, StructureType } from "@aoi/engine/aoi";
+import type { GameState, HexId, MapGeometry, Seat, StructureType } from "@aoi/engine/aoi";
 import { TERRAIN_COLOR, WATER_COLOR, inkOn } from "./colors.ts";
 import { STRUCTURE_NAME, TERRAIN_NAME } from "./labels.ts";
-import { HEX_R, boardLabels, hexCenter, hexPoints, mapSize, type ReachableHex } from "./mapView.ts";
+import { HEX_R, boardLabels, hexCenter, hexPoints, mapSize, outlinePath, type ReachableHex } from "./mapView.ts";
 
 /** 地图上建筑徽章里的单字，和徽章半径（越高级越大） */
 const BADGE: Record<StructureType, { ch: string; r: number }> = {
@@ -20,15 +20,22 @@ interface Props {
     name: (seat: Seat) => string;
     /** 正在查看谁：TA 能到达的空格会画虚线框 */
     reach: ReachableHex[];
+    /** 可以点的格子（比如放初始工坊时能放的格子），画成实线框 */
+    targets?: Set<HexId>;
+    /** 选中的格子 */
+    selected?: HexId | null;
+    /** 点了一个陆地格。不传就是不能点 */
+    onHexClick?: (id: HexId) => void;
 }
 
-/** 六边形地图：地形、河流、建筑、桥，以及某位玩家的可达范围 */
-export function HexMap({ geo, state, name, reach }: Props) {
+/** 六边形地图：地形、河流、城市、建筑、桥，以及某位玩家的可达范围 */
+export function HexMap({ geo, state, name, reach, targets, selected, onHexClick }: Props) {
     const { width, height } = mapSize(geo);
     const labels = boardLabels(geo);
     const reachById = new Map(reach.map((r) => [r.id, r.spades]));
     const land = geo.hexes.filter((h) => !h.river);
     const rivers = geo.hexes.filter((h) => h.river);
+    const clickable = onHexClick !== undefined;
 
     return (
         <svg className="hexmap" viewBox={`0 0 ${width.toFixed(0)} ${height.toFixed(0)}`} role="img" aria-label={`${geo.name}，${land.length} 个陆地格`}>
@@ -48,9 +55,22 @@ export function HexMap({ geo, state, name, reach }: Props) {
                     const terrain = hs ? hs.terrain : h.terrain;
                     const owner = hs?.structure ? `，${name(hs.structure.owner)}的${STRUCTURE_NAME[hs.structure.type]}` : "";
                     const changed = terrain !== h.terrain ? `（原来是${TERRAIN_NAME[h.terrain]}）` : "";
+                    const title = `${labels[h.id]}：${TERRAIN_NAME[terrain]}${changed}${owner}。引擎编号 ${h.id}`;
                     return (
-                        <g key={h.id}>
-                            <title>{`${labels[h.id]}：${TERRAIN_NAME[terrain]}${changed}${owner}。引擎编号 ${h.id}`}</title>
+                        <g
+                            key={h.id}
+                            data-hex={h.id}
+                            className={clickable ? "hex-cell" : undefined}
+                            onClick={clickable ? () => onHexClick(h.id) : undefined}
+                            // 能点的格子也要能用键盘选中：Tab 过来，按回车或空格
+                            tabIndex={clickable ? 0 : undefined}
+                            role={clickable ? "button" : undefined}
+                            aria-label={clickable ? title : undefined}
+                            onKeyDown={clickable ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onHexClick(h.id); }
+                            } : undefined}
+                        >
+                            <title>{title}</title>
                             <polygon points={hexPoints(c.x, c.y, HEX_R - 1.4)} fill={TERRAIN_COLOR[terrain]} />
                             <text className="hex-label" x={c.x} y={c.y + HEX_R * 0.66} fill={inkOn(terrain)}>{labels[h.id]}</text>
                         </g>
@@ -58,14 +78,29 @@ export function HexMap({ geo, state, name, reach }: Props) {
                 })}
             </g>
 
-            {/* 第 3 层：可达范围。虚线框 + 需要几铲 */}
+            {/* 第 3 层：城市轮廓。城市一定建在主人的家园地形上，用玩家色描边会和格子同色看不见，
+                所以画成"深色粗线 + 中间一道白线"，在什么地形上都看得清 */}
+            <g aria-hidden className="city-outline">
+                {state.cities.map((city) => {
+                    const d = outlinePath(geo, city.hexes, HEX_R - 2.5);
+                    return (
+                        <g key={city.id}>
+                            <title>{`${name(city.owner)}的城市`}</title>
+                            <path d={d} stroke="var(--ink)" strokeWidth={6} />
+                            <path d={d} stroke="#FFFFFF" strokeWidth={2.5} />
+                        </g>
+                    );
+                })}
+            </g>
+
+            {/* 第 4 层：可达范围。虚线框 + 需要几铲 */}
             <g aria-hidden>
                 {land.filter((h) => reachById.has(h.id)).map((h) => {
                     const c = hexCenter(h.row, h.col);
                     const terrain = state.hexes[h.id].terrain;
                     const spades = reachById.get(h.id)!;
                     return (
-                        <g key={h.id} className="reach">
+                        <g key={h.id} className="reach" data-hex={h.id}>
                             <polygon points={hexPoints(c.x, c.y, HEX_R * 0.86)} fill="none" stroke={inkOn(terrain)} />
                             <text x={c.x} y={c.y + 2} fill={inkOn(terrain)}>{spades === 0 ? "可建" : `${spades} 铲`}</text>
                         </g>
@@ -73,7 +108,20 @@ export function HexMap({ geo, state, name, reach }: Props) {
                 })}
             </g>
 
-            {/* 第 4 层：桥。从一个格子中心附近画到另一个格子中心附近 */}
+            {/* 第 5 层：可以点的格子（实线框）和选中的格子（加粗） */}
+            <g aria-hidden className="targets">
+                {targets && land.filter((h) => targets.has(h.id)).map((h) => {
+                    const c = hexCenter(h.row, h.col);
+                    return <polygon key={h.id} data-hex={h.id} points={hexPoints(c.x, c.y, HEX_R * 0.8)} stroke={inkOn(state.hexes[h.id].terrain)} />;
+                })}
+                {selected && geo.byId[selected] && (() => {
+                    const h = geo.byId[selected];
+                    const c = hexCenter(h.row, h.col);
+                    return <polygon className="selected" points={hexPoints(c.x, c.y, HEX_R - 3)} />;
+                })()}
+            </g>
+
+            {/* 第 6 层：桥。从一个格子中心附近画到另一个格子中心附近 */}
             <g>
                 {state.bridges.map((b, i) => {
                     const ha = geo.byId[b.a], hb = geo.byId[b.b];
@@ -92,7 +140,7 @@ export function HexMap({ geo, state, name, reach }: Props) {
                 })}
             </g>
 
-            {/* 第 5 层：建筑徽章。玩家色填充 + 白圈，玩家色和格子同色时也看得清 */}
+            {/* 第 7 层：建筑徽章。玩家色填充 + 白圈，玩家色和格子同色时也看得清 */}
             <g aria-hidden>
                 {land.map((h) => {
                     const s = state.hexes[h.id]?.structure;

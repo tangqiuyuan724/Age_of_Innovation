@@ -2,6 +2,7 @@ import { useStore } from "./net.ts";
 import { Lobby } from "./Lobby.tsx";
 import { GameView } from "./GameView.tsx";
 import { AoiPreview } from "./aoi/AoiPreview.tsx";
+import { LocalPlay } from "./aoi/LocalPlay.tsx";
 import { useHash } from "./useHash.ts";
 
 export function App() {
@@ -10,6 +11,7 @@ export function App() {
     const hash = useHash();
 
     if (hash === "#aoi-preview") return <AoiPreview />;
+    if (hash === "#aoi-local") return <LocalPlay />;
 
     return (
         <main>
