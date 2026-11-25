@@ -98,3 +98,4 @@ export const UPGRADE_FROM: Record<"guild" | "school" | "palace" | "university", 
     palace: "guild",
     university: "school",
 };
+

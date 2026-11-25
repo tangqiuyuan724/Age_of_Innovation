@@ -1,0 +1,117 @@
+import { describe, it, expect } from "vitest";
+import { applyMove, createGame, validateMove, type GameState, type HexId, type Move, type Seat } from "../../src/aoi/index.ts";
+import { readyGame, seatOf, turnOf, withPlayer, withStructure } from "./fixtures.ts";
+
+const game = readyGame();
+const first = game.turnOrder[0];
+const second = game.turnOrder[1];
+const toCoin: Move = { t: "convert", conversion: "toolToCoin", times: 1 };
+
+describe("validateMove / applyMove：按指令种类分给各自的函数", () => {
+    const plains = seatOf(game, "plains");
+    const swamp = seatOf(game, "swamp");
+    const g = withPlayer(turnOf(game, plains), plains, { tools: 10, coins: 20 });
+
+    it("改造并建造", () => {
+        const move: Move = { t: "terraformAndBuild", hex: "D5", spades: 1, build: true };
+        expect(validateMove(g, plains, move)).toBeNull();
+        expect(applyMove(g, plains, move).state.hexes.D5.structure!.owner).toBe(plains);
+    });
+    it("升级", () => {
+        const move: Move = { t: "upgrade", hex: "C6", to: "guild" };
+        expect(validateMove(g, plains, move)).toBeNull();
+        expect(applyMove(g, plains, move).state.hexes.C6.structure!.type).toBe("guild");
+    });
+    it("结束回合，再由下一个人回应吸能", () => {
+        const withGuild = withStructure(g, "C7", swamp, "guild");
+        const upgraded = applyMove(withGuild, plains, { t: "upgrade", hex: "C6", to: "guild" }).state;
+        const { state } = applyMove(upgraded, plains, { t: "endTurn" });
+        const id = state.pending[0].id;
+        const answer: Move = { t: "decide", id, choice: { kind: "leech", accept: true } };
+        expect(validateMove(state, swamp, answer)).toBeNull();
+        expect(applyMove(state, swamp, answer).state.pending).toEqual([]);
+    });
+    it("这一课还没实现的主行动：bad-move", () => {
+        expect(validateMove(game, first, { t: "pass", bonusTile: null })).toBe("bad-move");
+        expect(validateMove(game, first, { t: "powerAction", id: "coins7" })).toBe("bad-move");
+    });
+    it("每执行一条指令，version 加 1；传入的状态不变", () => {
+        const { state } = applyMove(game, first, toCoin);
+        expect(state.version).toBe(game.version + 1);
+        expect(game.players[first].tools).toBe(state.players[first].tools + 1);
+    });
+});
+
+describe("自由行动：资源转换", () => {
+    it("转换成功：资源变了，主行动还没做", () => {
+        const { state } = applyMove(game, first, { t: "convert", conversion: "toolToCoin", times: 2 });
+        expect(state.players[first].coins).toBe(game.players[first].coins + 2);
+        expect(state.turn!.mainActionDone).toBe(false);
+    });
+    it("不是你的回合：not-your-turn", () => {
+        expect(validateMove(game, second, toCoin)).toBe("not-your-turn");
+    });
+    it("次数不对、缺颜色：bad-move", () => {
+        expect(validateMove(game, first, { t: "convert", conversion: "toolToCoin", times: 0 })).toBe("bad-move");
+        expect(validateMove(game, first, { t: "convert", conversion: "bookToCoin", times: 1 })).toBe("bad-move");
+    });
+    it("资源不够：insufficient-resources", () => {
+        expect(validateMove(withPlayer(game, first, { tools: 0 }), first, toCoin)).toBe("insufficient-resources");
+    });
+});
+
+describe("自由行动：牺牲能量", () => {
+    const swamp = seatOf(game, "swamp");
+    const state = turnOf(game, swamp);
+
+    it("每次：碗 II 里 1 个移出游戏、1 个移到碗 III", () => {
+        const before = state.players[swamp].power;
+        const { state: after } = applyMove(state, swamp, { t: "sacrificePower", times: 2 });
+        expect(after.players[swamp].power).toEqual([before[0], before[1] - 4, before[2] + 2]);
+    });
+    it("碗 II 不够：insufficient-power；次数不对：bad-move", () => {
+        expect(validateMove(state, swamp, { t: "sacrificePower", times: 9 })).toBe("insufficient-power");
+        expect(validateMove(state, swamp, { t: "sacrificePower", times: 0 })).toBe("bad-move");
+    });
+});
+
+describe("自动推进", () => {
+    it("回应开局最后一个决策：自动拿收入、开始第 1 轮", () => {
+        const waiting = readyGame([5, 0, 1]); // 荒地要选书的颜色
+        const waste = seatOf(waiting, "wasteland");
+        const move: Move = { t: "decide", id: waiting.pending[0].id, choice: { kind: "bookColor", books: { law: 1 } } };
+        const { state } = applyMove(waiting, waste, move);
+        expect(state.phase).toBe("actions");
+        expect(state.turn!.seat).toBe(state.turnOrder[0]);
+        expect(state.players[waste].coins).toBeGreaterThan(waiting.players[waste].coins); // 拿过收入了
+    });
+    it("从新开一局开始，全程只用 applyMove 也能走到第 1 轮的行动阶段", () => {
+        let state: GameState = createGame({ playerCount: 3, mapId: "aoi-base", setupMode: { kind: "sets" } }, "m14");
+        let steps = 0;
+        while (state.phase !== "actions" && steps < 50) {
+            const d = state.pending[0];
+            const choice =
+                d.kind === "pickSet" ? { kind: "pickSet" as const, set: freeSet(state) }
+                : d.kind === "initialWorkshop" ? { kind: "initialWorkshop" as const, hex: firstFreeHome(state, d.seat) }
+                : d.kind === "bookColor" ? { kind: "bookColor" as const, books: { banking: d.count } }
+                : { kind: "spades" as const, skip: true as const };
+            const move: Move = { t: "decide", id: d.id, choice };
+            expect(validateMove(state, d.seat, move)).toBeNull();
+            state = applyMove(state, d.seat, move).state;
+            steps++;
+        }
+        expect(state.phase).toBe("actions");
+        expect(state.round).toBe(1);
+    });
+});
+
+/** 测试用：第一个还没人选的组合。跳过蜥蜴：蜥蜴开局要选学科，M1-5 才实现 */
+function freeSet(state: GameState): number {
+    return state.board.setupSets.find((s) => s.takenBy === null && s.faction !== "lizards")!.id;
+}
+
+/** 测试用：这位玩家家园地形的第一块空地（初始工坊可以放在任何一块家园地形上） */
+function firstFreeHome(state: GameState, seat: Seat): HexId {
+    const home = state.players[seat].homeTerrain;
+    return Object.keys(state.hexes).find((id) => state.hexes[id].terrain === home && state.hexes[id].structure === null)!;
+}

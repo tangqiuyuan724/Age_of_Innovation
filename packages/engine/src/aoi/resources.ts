@@ -91,3 +91,18 @@ export function payResources(p: PlayerState, bundle: ResourceBundle): PlayerStat
         scholarsInSupply: p.scholarsInSupply + (bundle.scholars ?? 0),
     };
 }
+
+/** 每一项取相反数。费用写进事件时用负数，表示"少了这么多" */
+export function negateBundle(b: ResourceBundle): ResourceBundle {
+    const result: ResourceBundle = {};
+    for (const key of AMOUNT_KEYS) {
+        const n = b[key];
+        if (n) result[key] = -n;
+    }
+    if (b.books !== undefined) {
+        const books: Partial<Record<BookColor, number>> = {};
+        for (const [color, n] of Object.entries(b.books) as [BookColor, number][]) books[color] = -n;
+        result.books = books;
+    }
+    return result;
+}
