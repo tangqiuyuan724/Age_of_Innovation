@@ -23,3 +23,8 @@ export * from "./science.js";
 export * from "./scholar.js";
 export * from "./competency.js";
 export * from "./tracks.js";
+export * from "./bridge.js";
+export * from "./powerActions.js";
+export * from "./bookActions.js";
+export * from "./specialActions.js";
+export * from "./pass.js";

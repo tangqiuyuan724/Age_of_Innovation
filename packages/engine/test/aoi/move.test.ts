@@ -31,9 +31,8 @@ describe("validateMove / applyMove：按指令种类分给各自的函数", () =
         expect(validateMove(state, swamp, answer)).toBeNull();
         expect(applyMove(state, swamp, answer).state.pending).toEqual([]);
     });
-    it("这一课还没实现的主行动：bad-move", () => {
-        expect(validateMove(game, first, { t: "pass", bonusTile: null })).toBe("bad-move");
-        expect(validateMove(game, first, { t: "powerAction", id: "coins7" })).toBe("bad-move");
+        it("还没实现的主行动（研发创新板块在 M3）：bad-move", () => {
+        expect(validateMove(game, first, { t: "developInnovation", tile: "x", books: {} })).toBe("bad-move");
     });
     it("每执行一条指令，version 加 1；传入的状态不变", () => {
         const { state } = applyMove(game, first, toCoin);
@@ -141,5 +140,45 @@ describe("M1-5 的两个主行动、两个决策", () => {
         state = applyMove(state, plains, answer).state;
         expect(state.players[plains].competencies).toEqual([d.options[0]]);
         expect(validateMove(state, plains, { t: "endTurn" })).toBeNull();
+    });
+});
+
+describe("M1-6 的四个主行动", () => {
+    const plains = seatOf(game, "plains");
+    const forest = seatOf(game, "forest");
+    const g = withPlayer(turnOf(game, plains), plains, { tools: 10, coins: 20, power: [0, 5, 7] });
+
+    it("能量行动 1 铲 → 用在 D5 并建工坊 → 结束回合", () => {
+        let state = applyMove(g, plains, { t: "powerAction", id: "spade1" }).state;
+        const id = state.pending[0].id;
+        state = applyMove(state, plains, { t: "decide", id, choice: { kind: "spades", hex: "D5", build: true } }).state;
+        expect(state.hexes.D5.structure!.type).toBe("workshop");
+        expect(validateMove(state, plains, { t: "endTurn" })).toBeNull();
+    });
+    it("书本行动：付 2 本法律书拿 6 金币", () => {
+        const s0 = withPlayer(g, plains, { books: { banking: 0, law: 2, engineering: 0, medicine: 0 } });
+        const s: GameState = { ...s0, board: { ...s0.board, bookActions: ["coins6", "power5", "spade3"] } };
+        const move: Move = { t: "bookAction", id: "coins6", books: { law: 2 } };
+        expect(validateMove(s, plains, move)).toBeNull();
+        expect(applyMove(s, plains, move).state.players[plains].coins).toBe(26);
+    });
+    it("特殊行动：森林玩家的学科前进 1 级", () => {
+        const s = turnOf(game, forest);
+        const move: Move = { t: "specialAction", source: "bonus:levelAction" };
+        expect(validateMove(s, forest, move)).toBeNull();
+        expect(applyMove(s, forest, move).state.pending[0]).toMatchObject({ kind: "scienceLevels", levels: 1 });
+    });
+    it("三个人依次 pass、结束回合：轮到的人跳过已经 pass 的；最后没人可轮了", () => {
+        const tiles = [{ id: "spadeAction" as const, coins: 0 }, { id: "riverWorkshop" as const, coins: 0 }, { id: "bridgeAction" as const, coins: 0 }];
+        let state: GameState = { ...game, board: { ...game.board, bonusTiles: tiles } };
+        const order = state.turnOrder;
+        for (const [i, seat] of order.entries()) {
+            expect(state.turn!.seat).toBe(seat);
+            state = applyMove(state, seat, { t: "pass", bonusTile: tiles[i].id }).state;
+            state = applyMove(state, seat, { t: "endTurn" }).state;
+        }
+        expect(state.turn).toBeNull();
+        expect(state.nextTurnOrder).toEqual(order);
+        expect(state.players.every((p) => p.passed)).toBe(true);
     });
 });

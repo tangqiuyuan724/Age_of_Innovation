@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 5;
+export const CONTRACT_VERSION = 6;
 
 // ---------- 基础 ----------
 
@@ -405,8 +405,9 @@ export type DecisionChoice =
     | { kind: "spades"; hex: HexId; build: boolean }
     | { kind: "spades"; skip: true }
     | { kind: "bridge"; a: HexId; b: HexId }
+    | { kind: "bridge"; skip: true } // 放弃建桥
     | { kind: "scienceLevels"; discipline: Discipline }
-    // | { kind: "trackReward"; reward: "vp" | Discipline }
+    | { kind: "scienceLevels"; skip: true } // 放弃前进
     | { kind: "bookColor"; books: Partial<Record<Discipline, number>> }
     | { kind: "draftPick"; item: DraftItem }
     | { kind: "competency"; tile: CompetencyId }
@@ -429,8 +430,10 @@ export type Move =
     | { t: "sendScholar"; discipline: Discipline; space: number | "return" }    // 学者爬轨
     | { t: "developInnovation"; tile: InnovationId; books: BookPayment }    // 买大创
     | { t: "powerAction"; id: PowerActionId }   // 能量行动
-    | { t: "bookAction"; id: BookActionId; books: BookPayment } // 书本行动
-    | { t: "specialAction"; source: string }    // 特殊行动
+    /** freeGuild（免费把工坊升成行会）要用 hex 说明升哪一个；别的书本行动不填 hex */
+    | { t: "bookAction"; id: BookActionId; books: BookPayment; hex?: HexId }
+    /** source：特殊行动从哪来。回合奖励板块上的写成 "bonus:板块编号"，比如 "bonus:spadeAction" */
+    | { t: "specialAction"; source: string }
     | { t: "pass"; bonusTile: BonusTileId | null } // 过轮，第 6 轮传 null
     // 回合控制与决策
     | { t: "endTurn" }

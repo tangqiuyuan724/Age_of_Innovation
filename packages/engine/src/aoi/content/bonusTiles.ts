@@ -1,22 +1,33 @@
-// 10 个回合奖励板块。M1-3 只用到收入；行动得分、pass 得分、特殊行动后面几课再加。
+// 10 个回合奖励板块：收入、特殊行动、pass 时的奖励。
+// 拿着板块时做某些行动得分（比如"派学者得 2 分"）在 M1-7 和回合计分板块一起加。
 // 每个板块的完整效果写在 types.ts 的 BonusTileId 注释里。
-import type { BonusTileId, ResourceBundle } from "../types.js";
+import type { BonusTileId, BuildingType, ResourceBundle } from "../types.js";
 
 export interface BonusTileDef {
     id: BonusTileId;
     /** 收入阶段获得（板块上手掌图标上面的东西） */
     income: ResourceBundle;
+    /** 特殊行动（橙色八边形，每轮一次）：免费 1 铲改造并建造、免费建桥、任选学科前进 1 级 */
+    special?: "spade" | "bridge" | "level";
+    /** pass 时的奖励：自己每有一座 buildings 里的建筑，得 vp 分、任选学科前进 levels 级 */
+    pass?: { buildings: BuildingType[]; vp: number; levels: number };
 }
 
 export const BONUS_TILES: Record<BonusTileId, BonusTileDef> = {
     riverWorkshop: { id: "riverWorkshop", income: {} },
     scholarSend: { id: "scholarSend", income: { scholars: 1 } },
     guildBuild: { id: "guildBuild", income: { power: 3 } },
-    bigBuildingsPass: { id: "bigBuildingsPass", income: { tools: 1 } },
-    spadeAction: { id: "spadeAction", income: { books: { gray: 1 } } },
-    bridgeAction: { id: "bridgeAction", income: { books: { gray: 1 } } },
-    levelAction: { id: "levelAction", income: { tools: 2 } },
-    schoolsPass: { id: "schoolsPass", income: { coins: 4 } },
+    bigBuildingsPass: {
+        id: "bigBuildingsPass", income: { tools: 1 },
+        pass: { buildings: ["university", "palace"], vp: 4, levels: 0 },
+    },
+    spadeAction: { id: "spadeAction", income: { books: { gray: 1 } }, special: "spade" },
+    bridgeAction: { id: "bridgeAction", income: { books: { gray: 1 } }, special: "bridge" },
+    levelAction: { id: "levelAction", income: { tools: 2 }, special: "level" },
+    schoolsPass: {
+        id: "schoolsPass", income: { coins: 4 },
+        pass: { buildings: ["school"], vp: 0, levels: 1 },
+    },
     power4coins2: { id: "power4coins2", income: { power: 4, coins: 2 } },
     coins6: { id: "coins6", income: { coins: 6 } },
 };

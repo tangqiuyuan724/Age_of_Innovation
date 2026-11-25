@@ -117,8 +117,8 @@ export function describeMove(m: Move, n: Namer): string {
                 case "initialWorkshop": return `在 ${n.hex(c.hex)} 放初始工坊`;
                 case "leech": return c.accept ? "接受吸能" : "不要这次吸能";
                 case "spades": return "skip" in c ? "不用免费铲子" : `用免费铲子改造 ${n.hex(c.hex)}${c.build ? "并建工坊" : ""}`;
-                case "bridge": return `在 ${n.hex(c.a)} 和 ${n.hex(c.b)} 之间建桥`;
-                case "scienceLevels": return `选学科：${DISCIPLINE_NAME[c.discipline]}`;
+                case "bridge": return "skip" in c ? "放弃建桥" : `在 ${n.hex(c.a)} 和 ${n.hex(c.b)} 之间建桥`;
+                case "scienceLevels": return "skip" in c ? "放弃学科前进" : `选学科：${DISCIPLINE_NAME[c.discipline]}`;
                 case "bookColor": return `选书：${describeBundle({ books: c.books })}`;
                 case "competency": return `拿能力板块「${COMPETENCY_LABEL[c.tile].short}」`;
                 case "palaceTile": return `拿宫殿板块 #${c.tile}`;

@@ -114,3 +114,6 @@ export const COMPETENCY_ROW_REWARD: readonly { levels: number; books: number }[]
 
 /** 每种能力板块的张数 */
 export const COMPETENCY_COPIES = 4;
+
+/** 一共 6 轮。第 6 轮 pass 时不再拿新的回合奖励板块。来源：规则书"游戏流程" */
+export const LAST_ROUND = 6;

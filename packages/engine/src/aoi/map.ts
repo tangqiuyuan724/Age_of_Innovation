@@ -118,3 +118,19 @@ export function groupHexes(ids: HexId[], linked: (a: HexId, b: HexId) => boolean
     }
     return groups;
 }
+
+/**
+ * 从陆地格 from 出发，能架桥到哪些陆地格。桥要跨过河：
+ * 对面那格和 from 不相邻，两格正好有 2 个共同邻居，而且这 2 个都是河流格
+ * （桥就架在这两个河流格中间那条边上）
+ */
+export function bridgeSpots(geo: MapGeometry, from: HexId): HexId[] {
+    const mine = neighbors(geo, from);
+    const result: HexId[] = [];
+    for (const h of geo.hexes) {
+        if (h.river || h.id === from || mine.includes(h.id)) continue;
+        const common = neighbors(geo, h.id).filter((n) => mine.includes(n));
+        if (common.length === 2 && common.every((n) => geo.byId[n].river)) result.push(h.id);
+    }
+    return result;
+}

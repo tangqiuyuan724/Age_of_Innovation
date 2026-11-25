@@ -1,12 +1,16 @@
 // 指令的统一入口：服务端收到一条指令，先 validateMove，通过了再 applyMove。
 // 资源转换、牺牲能量这两种自由行动很短，也直接写在这里。
+import { applyBookAction, validateBookAction } from "./bookActions.js";
 import { applyTerraformAndBuild, validateTerraformAndBuild } from "./build.js";
 import { DISCIPLINES } from "./constants.js";
 import { convert } from "./convert.js";
 import { applyDecide, validateDecide } from "./decide.js";
 import { applyEndTurn, validateEndTurn } from "./endturn.js";
+import { applyPass, validatePass } from "./pass.js";
 import { sacrificePower } from "./power.js";
+import { applyPowerAction, validatePowerAction } from "./powerActions.js";
 import { applySendScholar, validateSendScholar } from "./scholar.js";
+import { applySpecialAction, validateSpecialAction } from "./specialActions.js";
 import { applyAdvanceTrack, validateAdvanceTrack } from "./tracks.js";
 import { advance, checkFreeAction, type Applied } from "./turn.js";
 import { applyUpgrade, validateUpgrade } from "./upgrade.js";
@@ -23,12 +27,12 @@ export function validateMove(state: GameState, seat: Seat, move: Move): RuleErro
         case "decide": return validateDecide(state, seat, move.id, move.choice);
         case "sendScholar": return validateSendScholar(state, seat, move.discipline, move.space);
         case "advanceTrack": return validateAdvanceTrack(state, seat, move.track);
-        // 下面几种主行动在 M1-6 实现（研发创新板块在 M3）
+        case "powerAction": return validatePowerAction(state, seat, move.id);
+        case "bookAction": return validateBookAction(state, seat, move.id, move.books, move.hex);
+        case "specialAction": return validateSpecialAction(state, seat, move.source);
+        case "pass": return validatePass(state, seat, move.bonusTile);
+        // 研发创新板块在 M3 实现
         case "developInnovation":
-        case "powerAction":
-        case "bookAction":
-        case "specialAction":
-        case "pass":
             return "bad-move";
         default: {
             const unhandled: never = move;
@@ -56,6 +60,10 @@ function dispatch(state: GameState, seat: Seat, move: Move): Applied {
         case "decide": return applyDecide(state, seat, move.choice);
         case "sendScholar": return applySendScholar(state, seat, move.discipline, move.space);
         case "advanceTrack": return applyAdvanceTrack(state, seat, move.track);
+        case "powerAction": return applyPowerAction(state, seat, move.id);
+        case "bookAction": return applyBookAction(state, seat, move.id, move.books, move.hex);
+        case "specialAction": return applySpecialAction(state, seat, move.source);
+        case "pass": return applyPass(state, seat, move.bonusTile);
         default:
             throw new Error(`还没实现的指令：${move.t}`);
     }

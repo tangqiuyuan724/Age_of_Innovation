@@ -68,3 +68,16 @@ describe("地图", () => {
         expect(geo.hexes.filter((h) => !h.river)).toHaveLength(81);
     });
 });
+
+describe("回合奖励板块的特殊行动和 pass 奖励（M1-6）", () => {
+    it("有特殊行动的 3 个：铲子、建桥、学科", () => {
+        const specials = BONUS_TILE_IDS.filter((id) => BONUS_TILES[id].special !== undefined);
+        expect(specials.sort()).toEqual(["bridgeAction", "levelAction", "spadeAction"]);
+    });
+    it("有 pass 奖励的 2 个：大学和宫殿每座 4 分；每座学校前进 1 级", () => {
+        expect(BONUS_TILES.bigBuildingsPass.pass).toEqual({ buildings: ["university", "palace"], vp: 4, levels: 0 });
+        expect(BONUS_TILES.schoolsPass.pass).toEqual({ buildings: ["school"], vp: 0, levels: 1 });
+        const withPass = BONUS_TILE_IDS.filter((id) => BONUS_TILES[id].pass !== undefined);
+        expect(withPass.length).toBe(2);
+    });
+});
