@@ -26,6 +26,7 @@ const START: Partial<Record<Terrain, HexId[]>> = {
     forest: ["B6", "I1"],
     desert: ["D5", "A12"],
     wasteland: ["A6", "C1"],
+    lake: ["G1", "H10"],
 };
 
 /**

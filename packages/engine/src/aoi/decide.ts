@@ -1,8 +1,10 @@
 // 决策：玩家回应待决策队列里的第一个决定。按决策的种类分给各自的函数处理。
 // 这里还放着两种开局时的决策：选书的颜色（荒地）、免费铲子（沙漠）。
+import { applyCompetency, validateCompetency } from "./competency.js";
 import { DISCIPLINES } from "./constants.js";
 import { applyLeech, validateLeech } from "./leech.js";
 import { isInReach } from "./reach.js";
+import { applyScienceLevels, validateScienceLevels } from "./science.js";
 import {
     applyDraftPick, applyInitialWorkshop, applyPickSet,
     validateDraftPick, validateInitialWorkshop, validatePickSet,
@@ -25,14 +27,16 @@ export function validateDecide(state: GameState, seat: Seat, id: string, choice:
         case "bookColor": return validateBookColor(state, seat, choice.books);
         case "leech": return validateLeech(state, seat);
         case "palaceTile": return validatePalaceTile(state, seat, choice.tile);
+        case "scienceLevels": return validateScienceLevels(state, seat, choice.discipline);
+        case "competency": return validateCompetency(state, seat, choice.tile);
         case "spades":
             if ("skip" in choice) return d.seat === seat ? null : "not-your-decision";
             return validateSpades(state, seat, choice.hex, choice.build);
         // 下面几种在 M1-5、M1-6 实现
         case "bridge":
-        case "scienceLevels":
+        // case "scienceLevels":
         // case "trackReward":
-        case "competency":
+        // case "competency":
         case "cityTile":
             return "bad-move";
         default: {
@@ -55,6 +59,8 @@ export function applyDecide(state: GameState, seat: Seat, choice: DecisionChoice
         case "bookColor": return applyBookColor(state, seat, choice.books);
         case "leech": return applyLeech(state, seat, choice.accept);
         case "palaceTile": return applyPalaceTile(state, seat, choice.tile);
+        case "scienceLevels": return applyScienceLevels(state, seat, choice.discipline);
+        case "competency": return applyCompetency(state, seat, choice.tile);
         case "spades": return "skip" in choice ? applySkipSpades(state) : applySpades(state, seat, choice.hex);
         default:
             throw new Error(`还没实现的决策：${choice.kind}`);

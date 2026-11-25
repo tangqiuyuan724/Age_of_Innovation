@@ -6,6 +6,8 @@ import { convert } from "./convert.js";
 import { applyDecide, validateDecide } from "./decide.js";
 import { applyEndTurn, validateEndTurn } from "./endturn.js";
 import { sacrificePower } from "./power.js";
+import { applySendScholar, validateSendScholar } from "./scholar.js";
+import { applyAdvanceTrack, validateAdvanceTrack } from "./tracks.js";
 import { advance, checkFreeAction, type Applied } from "./turn.js";
 import { applyUpgrade, validateUpgrade } from "./upgrade.js";
 import type { GameState, Move, RuleError, Seat } from "./types.js";
@@ -19,9 +21,9 @@ export function validateMove(state: GameState, seat: Seat, move: Move): RuleErro
         case "upgrade": return validateUpgrade(state, seat, move.hex, move.to);
         case "endTurn": return validateEndTurn(state, seat);
         case "decide": return validateDecide(state, seat, move.id, move.choice);
-        // 下面几种主行动在 M1-5 实现
-        case "advanceTrack":
-        case "sendScholar":
+        case "sendScholar": return validateSendScholar(state, seat, move.discipline, move.space);
+        case "advanceTrack": return validateAdvanceTrack(state, seat, move.track);
+        // 下面几种主行动在 M1-6 实现（研发创新板块在 M3）
         case "developInnovation":
         case "powerAction":
         case "bookAction":
@@ -52,6 +54,8 @@ function dispatch(state: GameState, seat: Seat, move: Move): Applied {
         case "upgrade": return applyUpgrade(state, seat, move.hex, move.to);
         case "endTurn": return applyEndTurn(state, seat);
         case "decide": return applyDecide(state, seat, move.choice);
+        case "sendScholar": return applySendScholar(state, seat, move.discipline, move.space);
+        case "advanceTrack": return applyAdvanceTrack(state, seat, move.track);
         default:
             throw new Error(`还没实现的指令：${move.t}`);
     }

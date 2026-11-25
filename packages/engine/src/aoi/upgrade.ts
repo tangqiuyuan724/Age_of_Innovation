@@ -1,4 +1,5 @@
 // 主行动"升级建筑"，以及升级成宫殿后的决策"选宫殿板块"。
+import { competencyOptions } from "./competency.js";
 import { UPGRADE_COST, UPGRADE_FROM } from "./constants.js";
 import { isAdjacent } from "./map.js";
 import { geometryOf } from "./reach.js";
@@ -36,7 +37,7 @@ export function validateUpgrade(state: GameState, seat: Seat, hex: HexId, to: Up
 /**
  * 升级：新建筑从规划板上拿走，旧建筑放回规划板。调用前先用 validateUpgrade 检查。
  * 升级成宫殿时，还没有宫殿板块的人（固定组合开局）要选一个。
- * 升级成学校、大学时拿能力板块，在 M1-5 加。
+ * 升级成学校、大学时，选一张能力板块。
  */
 export function applyUpgrade(state: GameState, seat: Seat, hex: HexId, to: UpgradeTarget): Applied {
     const p = state.players[seat];
@@ -52,6 +53,10 @@ export function applyUpgrade(state: GameState, seat: Seat, hex: HexId, to: Upgra
     const pending: Decision[] = [...state.pending];
     if (to === "palace" && p.palaceTile === null) {
         pending.push({ id: `palaceTile-${state.version}`, seat, kind: "palaceTile", options: state.board.palaceTilesAvailable });
+    }
+    if (to === "school" || to === "university") {
+        const options = competencyOptions(state, seat);
+        if (options.length > 0) pending.push({ id: `competency-${state.version}`, seat, kind: "competency", options });
     }
     const turn = state.turn!;
     return {

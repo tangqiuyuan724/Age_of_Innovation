@@ -92,9 +92,10 @@ describe("自动推进", () => {
             const d = state.pending[0];
             const choice =
                 d.kind === "pickSet" ? { kind: "pickSet" as const, set: freeSet(state) }
-                : d.kind === "initialWorkshop" ? { kind: "initialWorkshop" as const, hex: firstFreeHome(state, d.seat) }
-                : d.kind === "bookColor" ? { kind: "bookColor" as const, books: { banking: d.count } }
-                : { kind: "spades" as const, skip: true as const };
+                    : d.kind === "initialWorkshop" ? { kind: "initialWorkshop" as const, hex: firstFreeHome(state, d.seat) }
+                        : d.kind === "bookColor" ? { kind: "bookColor" as const, books: { banking: d.count } }
+                            : d.kind === "scienceLevels" ? { kind: "scienceLevels" as const, discipline: "law" as const }
+                                : { kind: "spades" as const, skip: true as const };
             const move: Move = { t: "decide", id: d.id, choice };
             expect(validateMove(state, d.seat, move)).toBeNull();
             state = applyMove(state, d.seat, move).state;
@@ -105,9 +106,9 @@ describe("自动推进", () => {
     });
 });
 
-/** 测试用：第一个还没人选的组合。跳过蜥蜴：蜥蜴开局要选学科，M1-5 才实现 */
+/** 测试用：第一个还没人选的组合 */
 function freeSet(state: GameState): number {
-    return state.board.setupSets.find((s) => s.takenBy === null && s.faction !== "lizards")!.id;
+    return state.board.setupSets.find((s) => s.takenBy === null)!.id;
 }
 
 /** 测试用：这位玩家家园地形的第一块空地（初始工坊可以放在任何一块家园地形上） */
@@ -115,3 +116,30 @@ function firstFreeHome(state: GameState, seat: Seat): HexId {
     const home = state.players[seat].homeTerrain;
     return Object.keys(state.hexes).find((id) => state.hexes[id].terrain === home && state.hexes[id].structure === null)!;
 }
+
+describe("M1-5 的两个主行动、两个决策", () => {
+    const plains = seatOf(game, "plains");
+    const g = withPlayer(turnOf(game, plains), plains, { tools: 10, coins: 20, scholars: 2 });
+
+    it("派学者", () => {
+        const move: Move = { t: "sendScholar", discipline: "law", space: 0 };
+        expect(validateMove(g, plains, move)).toBeNull();
+        expect(applyMove(g, plains, move).state.players[plains].science.law).toBe(3);
+    });
+    it("推进航行轨", () => {
+        const move: Move = { t: "advanceTrack", track: "sailing" };
+        expect(validateMove(g, plains, move)).toBeNull();
+        expect(applyMove(g, plains, move).state.players[plains].sailing).toBe(1);
+    });
+    it("升学校 → 选能力板块 → 才能结束回合", () => {
+        let state = withStructure(g, "C6", plains, "guild");
+        state = applyMove(state, plains, { t: "upgrade", hex: "C6", to: "school" }).state;
+        expect(validateMove(state, plains, { t: "endTurn" })).toBe("decision-pending");
+        const d = state.pending[0];
+        if (d.kind !== "competency") throw new Error("队列第一个应该是选能力板块");
+        const answer: Move = { t: "decide", id: d.id, choice: { kind: "competency", tile: d.options[0] } };
+        state = applyMove(state, plains, answer).state;
+        expect(state.players[plains].competencies).toEqual([d.options[0]]);
+        expect(validateMove(state, plains, { t: "endTurn" })).toBeNull();
+    });
+});
