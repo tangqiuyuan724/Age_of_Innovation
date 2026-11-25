@@ -11,7 +11,7 @@ export interface LogEntry {
 
 /** 日志：最新的一步在最上面。每一步下面列出引擎返回的事件 */
 export function GameLog({ entries, state, namer }: { entries: LogEntry[]; state: GameState; namer: Namer }) {
-    if (entries.length === 0) return <p className="shared-note">还没有人行动。</p>;
+    if (entries.length === 0) return <p className="muted">还没有人行动。</p>;
     const color = (seat: Seat) => {
         const p = state.players[seat];
         return p ? TERRAIN_COLOR[p.homeTerrain] : "var(--muted)";

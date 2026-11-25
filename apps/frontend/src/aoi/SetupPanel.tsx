@@ -4,10 +4,10 @@ import {
     type BonusTileId, type DraftItem, type FactionId, type GameState, type Move, type PalaceTileId, type Seat,
     type Terrain,
 } from "@aoi/engine/aoi";
-import { TERRAIN_COLOR, inkOn } from "./colors.ts";
+import { TERRAIN_COLOR } from "./colors.ts";
 import { describeBundle } from "./describe.ts";
 import { BONUS_TILE_LABEL, DRAFT_CATEGORY_NAME, TERRAIN_NAME, factionName } from "./labels.ts";
-import { TileImage } from "./TileImage.tsx";
+import { Art } from "./pieces.tsx";
 
 interface Props {
     state: GameState;
@@ -140,36 +140,18 @@ function ItemButton({ item, can, pick, children }: ItemButtonProps) {
 // ---------- 小卡片：有实物图就用图，没有就用扁平样式 ----------
 
 export function FactionCard({ id }: { id: FactionId }) {
-    return (
-        <TileImage
-            kind="faction" id={id} alt={`派系：${factionName(id)}`} className="img-faction"
-            fallback={<span className="flat-faction">{factionName(id)}</span>}
-        />
-    );
+    return <Art kind="faction" id={id} alt={`派系：${factionName(id)}`} className="setup-faction" />;
 }
 
 export function PlanningChip({ terrain }: { terrain: Terrain }) {
-    return (
-        <span className="terrain-chip" style={{ background: TERRAIN_COLOR[terrain], color: inkOn(terrain) }}>
-            {TERRAIN_NAME[terrain]}规划板
-        </span>
-    );
+    return <Art kind="planning" id={terrain} alt={`${TERRAIN_NAME[terrain]}规划板`} className="setup-planning" />;
 }
 
-/** bare：放在"回合奖励板块"那一栏里时，不用再写"回合奖励："几个字 */
+/** bare：放在"回合奖励板块"那一栏里时，鼠标悬停不用再写"回合奖励："几个字 */
 export function BonusChip({ id, bare = false }: { id: BonusTileId; bare?: boolean }) {
-    return (
-        <span className="bonus-chip" title={BONUS_TILE_LABEL[id].text}>
-            {bare ? "" : "回合奖励："}{BONUS_TILE_LABEL[id].short}
-        </span>
-    );
+    return <Art kind="bonus" id={id} alt={`${bare ? "" : "回合奖励："}${BONUS_TILE_LABEL[id].text}`} className="setup-bonus" />;
 }
 
 export function PalaceChip({ id }: { id: PalaceTileId }) {
-    return (
-        <TileImage
-            kind="palace" id={id} alt={`宫殿板块 #${id}，收入 ${describeBundle(PALACE_TILE_INCOME[id])}`} className="img-palace"
-            fallback={<span className="flat-palace">#{id}<small>收入 {describeBundle(PALACE_TILE_INCOME[id])}</small></span>}
-        />
-    );
+    return <Art kind="palace" id={id} alt={`宫殿板块 #${id}，收入 ${describeBundle(PALACE_TILE_INCOME[id])}`} className="setup-palace" />;
 }

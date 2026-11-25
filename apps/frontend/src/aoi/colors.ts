@@ -1,5 +1,5 @@
-// 颜色：玩家的颜色就是他家园地形的颜色；能量专用紫色。
-import type { Discipline, Terrain } from "@aoi/engine/aoi";
+// 颜色：玩家的颜色就是他家园地形的颜色（木头棋子也是这个颜色）。
+import type { Terrain } from "@aoi/engine/aoi";
 
 export const TERRAIN_COLOR: Record<Terrain, string> = {
     desert: "#E2BF55",
@@ -11,17 +11,15 @@ export const TERRAIN_COLOR: Record<Terrain, string> = {
     wasteland: "#B4463A",
 };
 
-/** 河流：比湖泊浅得多，一眼能分开"河"和"湖泊地形" */
-export const WATER_COLOR = "#CFE0E6";
-
-/** 深色地形上的文字要用浅色 */
-export function inkOn(t: Terrain): string {
-    return t === "swamp" || t === "forest" || t === "wasteland" || t === "plains" ? "#F6F7F3" : "#1F2F38";
+/** 把颜色调深（amount > 0）或调浅（amount < 0），amount 是 -1 ~ 1。木头棋子的侧面、高光用 */
+export function shade(hex: string, amount: number): string {
+    const n = parseInt(hex.slice(1), 16);
+    const target = amount > 0 ? 0 : 255;
+    const t = Math.abs(amount);
+    const mix = (c: number) => Math.round(c + (target - c) * t);
+    const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
-export const DISCIPLINE_COLOR: Record<Discipline, string> = {
-    banking: "#B8862B",
-    law: "#3D6FA6",
-    engineering: "#7A6A58",
-    medicine: "#3E8A62",
-};
+/** 中立建筑（不属于任何人）用的浅色木头 */
+export const NEUTRAL_WOOD = "#D9CFBA";

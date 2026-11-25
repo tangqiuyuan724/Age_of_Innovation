@@ -23,8 +23,22 @@ export const AOI_BASE: MapGeometry = mapGeometry("aoi-base");
 
 /** 六边形外接圆半径（中心到顶点），单位是 SVG 坐标，不是像素 */
 export const HEX_R = 40;
-const HEX_W = Math.sqrt(3) * HEX_R;   // 尖顶六边形的宽度，也是相邻两格中心的距离
+/** 尖顶六边形的宽度，也是相邻两格中心的距离 */
+export const HEX_W = Math.sqrt(3) * HEX_R;
 const PAD = 8;                        // 地图四周留白
+
+/**
+ * 书本边框（图 147，3600 × 2115 像素）在 SVG 坐标里的位置和大小。
+ * 边框里的空洞正好是 9 行 × 13 列、每格宽 215 像素的六边形网格：A 行第一格的中心在图上 (454.75, 312.2)。
+ * 一个 SVG 单位 = 215 / HEX_W 个像素，由此算出边框左上角在哪
+ */
+const FRAME_PX = 215 / HEX_W;
+export const FRAME = {
+    x: PAD + HEX_W / 2 - 454.75 / FRAME_PX,
+    y: PAD + HEX_R - 312.2 / FRAME_PX,
+    w: 3600 / FRAME_PX,
+    h: 2115 / FRAME_PX,
+};
 
 /** 格子中心坐标。odd-r 排法：奇数行（B、D、F…）整体右移半格 */
 export function hexCenter(row: number, col: number): { x: number; y: number } {

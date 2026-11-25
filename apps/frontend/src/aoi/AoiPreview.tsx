@@ -11,11 +11,10 @@ export function AoiPreview() {
             state={MOCK_STATE}
             name={name}
             me={MOCK_MY_SEAT}
-            footnote="预览：假数据"
             tools={
                 <button
                     type="button"
-                    className="tool"
+                    className="btn btn-quiet"
                     onClick={() => {
                         startFromMock();
                         window.location.hash = "#aoi-local";

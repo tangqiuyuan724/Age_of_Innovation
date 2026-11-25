@@ -71,7 +71,7 @@ export const MOCK_STATE: GameState = {
     pending: [{ id: "d-41", seat: 0, kind: "leech", from: 1, power: 2, vpCost: 1 }],
     hexes: mockHexes(),
     bridges: [{ owner: 1, a: "B1", b: "A3" }],
-    cities: [{ id: 0, owner: 1, hexes: CITY_HEXES, tile: null }],
+    cities: [{ id: 0, owner: 1, hexes: CITY_HEXES, tile: "power" }],
     players: [
         player({
             seat: 0, faction: "philosophers", homeTerrain: "plains",
@@ -89,7 +89,7 @@ export const MOCK_STATE: GameState = {
             power: [0, 6, 6], terraforming: 2, bridges: 2,
             science: { banking: 0, law: 1, engineering: 6, medicine: 2 },
             buildingsLeft: { workshop: 7, guild: 3, school: 3, university: 1, palace: 0 },
-            palaceTile: 9, bonusTile: "guildBuild",
+            palaceTile: 9, bonusTile: "guildBuild", cityTiles: ["power"],
         }),
         player({
             seat: 2, faction: "navigators", homeTerrain: "lake",
@@ -123,7 +123,7 @@ export const MOCK_STATE: GameState = {
             medicine: [2, null, null, null],
         },
         level12: { banking: null, law: null, engineering: null, medicine: null },
-        roundScores: ["rs-1", "rs-2", "rs-3", "rs-4", "rs-5", "rs-6"],
+        roundScores: ["workshopLaw", "guildMedicine", "levelMedicine", "spadeEngineering", "schoolBanking", "bigBanking"],
         finalRoundScore: "frs-1",
         bonusTiles: [
             { id: "power4coins2", coins: 1 },
@@ -143,7 +143,7 @@ export const MOCK_STATE: GameState = {
             borderWorkshopVp: 4, actionPower4: 4, scholarVp: 4, annexes: 4,
         },
         palaceTilesAvailable: [3, 12, 17],
-        cityTilesLeft: {},
+        cityTilesLeft: { tools: 3, spades: 3, books: 3, coins: 3, levels: 3, power: 2, scholar: 3 },
     },
     finalScores: null,
 };

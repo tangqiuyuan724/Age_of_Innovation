@@ -2,7 +2,7 @@
 // labels.ts 放"一个 id 对应一个名字"的表，这里放"拼句子"的函数。
 import {
     DISCIPLINES,
-    type BookColor, type Decision, type DraftItem, type GameEvent, type HexId, type Move, type ResourceBundle, type Seat,
+    type BonusTileId, type BookColor, type Decision, type DraftItem, type GameEvent, type HexId, type Move, type ResourceBundle, type Seat,
 } from "@aoi/engine/aoi";
 import {
     BONUS_TILE_LABEL, BOOK_ACTION_LABEL, BOOK_NAME, COMPETENCY_LABEL, CONVERSION_LABEL, DISCIPLINE_NAME,
@@ -54,7 +54,17 @@ const REASON: Record<string, string> = {
     competency: "能力板块",
     income: "收入",
     bookColor: "选书",
+    powerAction: "能量行动",
+    bookAction: "书本行动",
+    pass: "pass 奖励",
+    bonusTile: "回合奖励板块上的金币",
 };
+
+/** 特殊行动的来源 "bonus:板块编号" 写成人看的名字；以后别的来源（M3）在这里加 */
+function specialSourceName(source: string): string {
+    const id = source.startsWith("bonus:") ? source.slice("bonus:".length) : "";
+    return id in BONUS_TILE_LABEL ? `回合奖励板块「${BONUS_TILE_LABEL[id as BonusTileId].short}」` : source;
+}
 
 function draftItemName(item: DraftItem): string {
     switch (item.category) {
@@ -105,9 +115,12 @@ export function describeMove(m: Move, n: Namer): string {
                 : `派学者：${DISCIPLINE_NAME[m.discipline]}第 ${m.space + 1} 格`;
         case "developInnovation": return `研发创新板块 ${m.tile}`;
         case "powerAction": return `能量行动：${POWER_ACTION_LABEL[m.id]}`;
-        case "bookAction": return `书本行动：${BOOK_ACTION_LABEL[m.id]}`;
-        case "specialAction": return `特殊行动：${m.source}`;
-        case "pass": return m.bonusTile ? `结束本轮，拿回合奖励板块「${BONUS_TILE_LABEL[m.bonusTile].short}」` : "结束本轮";
+        case "bookAction": {
+            const guild = m.id !== "freeGuild" ? "" : m.hex ? `（${n.hex(m.hex)}）` : "（放弃升级）";
+            return `书本行动：${BOOK_ACTION_LABEL[m.id]}${guild}，付 ${describeBundle({ books: m.books })}`;
+        }
+        case "specialAction": return `特殊行动：${specialSourceName(m.source)}`;
+        case "pass": return m.bonusTile ? `pass，拿回合奖励板块「${BONUS_TILE_LABEL[m.bonusTile].short}」` : "pass（最后一轮）";
         case "endTurn": return "结束回合";
         case "decide": {
             const c = m.choice;
@@ -151,7 +164,9 @@ export function describeEvent(e: GameEvent, n: Namer): string {
         case "tileTaken": {
             const tile = e.kind === "competency" && e.tile in COMPETENCY_LABEL
                 ? `「${COMPETENCY_LABEL[e.tile as keyof typeof COMPETENCY_LABEL].short}」`
-                : e.tile;
+                : e.kind === "bonus" && e.tile in BONUS_TILE_LABEL
+                    ? `「${BONUS_TILE_LABEL[e.tile as BonusTileId].short}」`
+                    : e.tile;
             return `${n.name(e.seat)}拿了${TILE_KIND[e.kind]} ${tile}`;
         }
         case "passed": return `${n.name(e.seat)}结束本轮`;

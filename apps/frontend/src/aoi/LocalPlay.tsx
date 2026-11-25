@@ -30,11 +30,10 @@ export function LocalPlay() {
             log={steps}
             notice={notice}
             onCloseNotice={clearNotice}
-            footnote={`本地试玩，第 ${steps.length} 步`}
             tools={
                 <>
-                    <button type="button" className="tool" disabled={steps.length === 0} onClick={undoLocal}>撤销一步</button>
-                    <button type="button" className="tool" onClick={quitLocalGame}>结束试玩</button>
+                    <button type="button" className="btn btn-quiet" disabled={steps.length === 0} onClick={undoLocal}>撤销一步</button>
+                    <button type="button" className="btn btn-quiet" onClick={quitLocalGame}>结束试玩</button>
                 </>
             }
         />

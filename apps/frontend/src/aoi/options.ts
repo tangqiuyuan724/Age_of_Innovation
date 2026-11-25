@@ -2,13 +2,15 @@
 // 前端自己不写任何规则：费用用引擎的函数算，能不能做由 validateMove 说了算。
 // 引擎还没实现的指令，validateMove 会返回 "bad-move"，界面上就显示"引擎还没实现"。
 import {
-    BUILD_WORKSHOP_COST, DISCIPLINES, SCHOLAR_SPACE_LEVELS, UPGRADE_FROM,
-    addBundles, spadeCost, terrainDistance, terraformToward, upgradeCost, validateMove,
-    type Discipline, type GameState, type HexId, type MapGeometry, type Move, type ResourceBundle, type RuleError,
-    type Seat, type Terrain,
+    BONUS_TILES, BOOK_ACTION_COST, BUILD_WORKSHOP_COST, DISCIPLINES, LAST_ROUND, POWER_ACTION_COST, SCHOLAR_SPACE_LEVELS,
+    UPGRADE_FROM,
+    addBundles, bridgeOptions, spadeCost, spadesBuildCost, terrainDistance, terraformToward, upgradeCost, validateMove,
+    type BookActionId, type BookPayment, type Discipline, type GameState, type HexId, type MapGeometry, type Move,
+    type PlayerState, type PowerActionId, type ResourceBundle, type RuleError, type Seat, type Terrain,
 } from "@aoi/engine/aoi";
-import { STRUCTURE_NAME, TERRAIN_NAME, reasonText } from "./labels.ts";
-import { reachableEmpty } from "./mapView.ts";
+import {
+    BONUS_TILE_LABEL, BOOK_ACTION_LABEL, POWER_ACTION_LABEL, SPECIAL_ACTION_LABEL, STRUCTURE_NAME, TERRAIN_NAME,
+} from "./labels.ts";
 
 /** 现在该谁操作：队列里有待决策就是第一个决策的人，否则是当前回合的人；都没有返回 null */
 export function actingSeat(state: GameState): Seat | null {
@@ -34,10 +36,11 @@ const UPGRADE_TARGETS = Object.keys(UPGRADE_FROM) as (keyof typeof UPGRADE_FROM)
 
 /**
  * 点了地图上的一个格子以后，seat 在这里能做的事：
- *  - 待决策是"放初始工坊""用免费铲子"时：在这一格回应决策
+ *  - 待决策是"放初始工坊""用免费铲子""建桥"时：在这一格回应决策
  *  - 自己的回合：空地可以改造（改几铲都行）、改完可以建工坊；自己的建筑可以升级
+ * hexName 把引擎编号换成版图上印的名字，用在"和某格之间建桥"这种按钮上
  */
-export function hexChoices(state: GameState, seat: Seat, hex: HexId): Choice[] {
+export function hexChoices(state: GameState, seat: Seat, hex: HexId, hexName: (id: HexId) => string = (id) => id): Choice[] {
     const h = state.hexes[hex];
     const p = state.players[seat];
     if (h === undefined || p === undefined) return [];
@@ -48,14 +51,12 @@ export function hexChoices(state: GameState, seat: Seat, hex: HexId): Choice[] {
         if (d.kind === "initialWorkshop") {
             return [choice(state, seat, "在这里放初始工坊", { t: "decide", id: d.id, choice: { kind: "initialWorkshop", hex } })];
         }
-        if (d.kind === "spades") {
-            const result = [choice(state, seat, `用免费铲子改造这里（最多 ${d.spades} 铲）`,
-                { t: "decide", id: d.id, choice: { kind: "spades", hex, build: false } })];
-            if (d.canBuild) {
-                result.push(choice(state, seat, "用免费铲子改造并建工坊",
-                    { t: "decide", id: d.id, choice: { kind: "spades", hex, build: true } }));
-            }
-            return result;
+        if (d.kind === "spades") return spadeChoices(state, seat, hex, d.id, d.spades, d.canBuild);
+        if (d.kind === "bridge") {
+            return bridgeOptions(state, seat)
+                .filter((o) => o.a === hex || o.b === hex)
+                .map((o) => choice(state, seat, `和 ${hexName(o.a === hex ? o.b : o.a)} 之间建桥`,
+                    { t: "decide", id: d.id, choice: { kind: "bridge", a: o.a, b: o.b } }));
         }
         return [];
     }
@@ -84,16 +85,91 @@ export function hexChoices(state: GameState, seat: Seat, hex: HexId): Choice[] {
     return [];
 }
 
-/** 待决策是"放初始工坊""用免费铲子"时，地图上哪些格子可以点 */
+/**
+ * 免费铲子用在 hex 的两种做法：只改造（只用免费铲子，能改多少改多少），改到家园地形再建工坊（铲子不够用工具补）。
+ * 按钮上写清楚会变成什么地形、会不会剩铲子
+ */
+function spadeChoices(state: GameState, seat: Seat, hex: HexId, id: string, spades: number, canBuild: boolean): Choice[] {
+    const p = state.players[seat];
+    const h = state.hexes[hex];
+    const distance = terrainDistance(h.terrain, p.homeTerrain);
+    const move: Move = { t: "decide", id, choice: { kind: "spades", hex, build: false } };
+    if (distance === 0) return [choice(state, seat, "这里已经是家园地形，铲子用不上", move)];
+    const used = Math.min(spades, distance);
+    const left = Math.max(0, spades - distance);
+    const after = terraformToward(h.terrain, p.homeTerrain, used);
+    const rest = left > 0 ? `，剩 ${left} 把下一格用` : "";
+    const result = [choice(state, seat, `只改造：变成${TERRAIN_NAME[after]}（用 ${used} 把${rest}）`, move)];
+    if (canBuild) {
+        const bought = Math.max(0, distance - spades);
+        result.push(choice(state, seat,
+            `改成${TERRAIN_NAME[p.homeTerrain]}并建工坊${bought > 0 ? `（另买 ${bought} 铲）` : ""}${rest}`,
+            { t: "decide", id, choice: { kind: "spades", hex, build: true } },
+            spadesBuildCost(p, spades, distance)));
+    }
+    return result;
+}
+
+/** 待决策是"放初始工坊""用免费铲子""建桥"时，地图上哪些格子可以点 */
 export function decisionTargets(state: GameState, geo: MapGeometry, seat: Seat): Set<HexId> {
     const d = state.pending[0];
     const targets = new Set<HexId>();
-    if (d === undefined || d.seat !== seat || (d.kind !== "initialWorkshop" && d.kind !== "spades")) return targets;
+    if (d === undefined || d.seat !== seat || !["initialWorkshop", "spades", "bridge"].includes(d.kind)) return targets;
     for (const h of geo.hexes) {
         if (h.river) continue;
         if (hexChoices(state, seat, h.id).some((c) => c.error === null)) targets.add(h.id);
     }
     return targets;
+}
+
+/** 6 个能量行动，按游戏板上的顺序 */
+export const POWER_ACTIONS: PowerActionId[] = ["bridge", "scholar", "tools2", "coins7", "spade1", "spade2"];
+
+/** 能量行动：每个一个选项，花多少能量 */
+export function powerActionChoices(state: GameState, seat: Seat): Choice[] {
+    return POWER_ACTIONS.map((id) =>
+        choice(state, seat, POWER_ACTION_LABEL[id], { t: "powerAction", id }, { power: POWER_ACTION_COST[id] }));
+}
+
+/**
+ * 付 n 本书的一种默认付法：先从手上最多的颜色付，这样剩下的颜色更平均。书不够返回 null。
+ * 只是给界面一个起点，玩家可以自己改
+ */
+export function autoBooks(p: PlayerState, n: number): BookPayment | null {
+    const pay: Record<Discipline, number> = { banking: 0, law: 0, engineering: 0, medicine: 0 };
+    for (let i = 0; i < n; i++) {
+        const best = DISCIPLINES.filter((x) => p.books[x] - pay[x] > 0)
+            .sort((a, b) => (p.books[b] - pay[b]) - (p.books[a] - pay[a]))[0];
+        if (best === undefined) return null;
+        pay[best]++;
+    }
+    return Object.fromEntries(DISCIPLINES.filter((x) => pay[x] > 0).map((x) => [x, pay[x]]));
+}
+
+/** 书本行动：本局翻开的每一个一个选项，用默认付法问引擎。书不够时问引擎用"全付银行书"，拿到不够的原因 */
+export function bookActionChoices(state: GameState, seat: Seat): Choice[] {
+    const p = state.players[seat];
+    return state.board.bookActions.map((id: BookActionId) => {
+        const cost = BOOK_ACTION_COST[id];
+        const books = autoBooks(p, cost) ?? { banking: cost };
+        return choice(state, seat, BOOK_ACTION_LABEL[id], { t: "bookAction", id, books }, { books: { gray: cost } });
+    });
+}
+
+/** 特殊行动：现在只有回合奖励板块上的（宫殿、能力、大创板块、派系的在 M3） */
+export function specialActionChoices(state: GameState, seat: Seat): Choice[] {
+    const tile = state.players[seat]?.bonusTile;
+    const special = tile == null ? undefined : BONUS_TILES[tile].special;
+    if (tile == null || special === undefined) return [];
+    return [choice(state, seat, SPECIAL_ACTION_LABEL[special], { t: "specialAction", source: `bonus:${tile}` })];
+}
+
+/** pass 的选项：第 1~5 轮从场上拿一块回合奖励板块（连同上面的金币）；第 6 轮只有一个不拿板块的选项 */
+export function passChoices(state: GameState, seat: Seat): Choice[] {
+    if (state.round === LAST_ROUND) return [choice(state, seat, "结束本轮（最后一轮，不拿板块）", { t: "pass", bonusTile: null })];
+    return state.board.bonusTiles.map((t) => choice(state, seat,
+        `「${BONUS_TILE_LABEL[t.id].short}」${t.coins > 0 ? ` +${t.coins} 金币` : ""}`,
+        { t: "pass", bonusTile: t.id }));
 }
 
 /** 一门学科能派学者的选项：放到 4 个学者格里的某一格（格子被占了引擎会说 space-occupied），或者退回供应区 */
@@ -102,92 +178,6 @@ export function scholarChoices(state: GameState, seat: Seat, d: Discipline): Cho
         choice(state, seat, `第 ${space + 1} 格 +${levels} 级`, { t: "sendScholar", discipline: d, space }));
     result.push(choice(state, seat, "退回 +1 级", { t: "sendScholar", discipline: d, space: "return" }));
     return result;
-}
-
-/**
- * 假装现在轮到 seat，而且 TA 还没做主行动、也没有人在等决定。
- * 用来回答"TA 现在能做什么"：对这个假想的局面调用 validateMove，引擎就会按 TA 手上的资源判断。
- * 开局还没选完（玩家还不存在）时返回 null
- */
-export function asIfActive(state: GameState, seat: Seat): GameState | null {
-    if (state.players[seat] === undefined || state.phase === "ended") return null;
-    return { ...state, phase: "actions", pending: [], turn: { seat, mainActionDone: false, builtHexes: [] } };
-}
-
-/** "TA 现在能做什么"里的一行 */
-export interface SummaryLine {
-    label: string;
-    /** 能做时写数量或者说明；不能做时写原因 */
-    detail: string;
-    ok: boolean;
-}
-
-/**
- * 一位玩家现在能做的主行动，一类一行。
- * state 应该是"轮到 TA、还没做主行动"的局面（用 asIfActive 得到）
- */
-export function actionSummary(state: GameState, geo: MapGeometry, seat: Seat): SummaryLine[] {
-    const lines: SummaryLine[] = [];
-    const p = state.players[seat];
-
-    // 改造并建造：只检查够得着的空地，每格看"改到底并建工坊"和"只改 1 铲"两种
-    let buildable = 0;
-    let terraformOnly = 0;
-    for (const r of reachableEmpty(geo, state, seat)) {
-        const build = validateMove(state, seat, { t: "terraformAndBuild", hex: r.id, spades: r.spades, build: true });
-        if (build === null) { buildable++; continue; }
-        if (r.spades > 0 && validateMove(state, seat, { t: "terraformAndBuild", hex: r.id, spades: 1, build: false }) === null) {
-            terraformOnly++;
-        }
-    }
-    lines.push({
-        label: "改造并建造",
-        ok: buildable + terraformOnly > 0,
-        detail: buildable + terraformOnly === 0
-            ? "资源不够，或者够得着的空地都改不了"
-            : `能建工坊的格子 ${buildable} 个${terraformOnly > 0 ? `，只能改造的 ${terraformOnly} 个` : ""}`,
-    });
-
-    // 升级：数一数每种目标各有几座能升
-    const upgrades = new Map<string, number>();
-    for (const [hex, h] of Object.entries(state.hexes)) {
-        if (h.structure?.owner !== seat) continue;
-        for (const to of UPGRADE_TARGETS) {
-            if (validateMove(state, seat, { t: "upgrade", hex, to }) === null) {
-                upgrades.set(STRUCTURE_NAME[to], (upgrades.get(STRUCTURE_NAME[to]) ?? 0) + 1);
-            }
-        }
-    }
-    lines.push({
-        label: "升级建筑",
-        ok: upgrades.size > 0,
-        detail: upgrades.size === 0 ? "现在没有能升级的" : [...upgrades].map(([to, n]) => `升${to} ${n} 处`).join("，"),
-    });
-
-    for (const track of ["sailing", "terraforming"] as const) {
-        const error = validateMove(state, seat, { t: "advanceTrack", track });
-        lines.push({
-            label: track === "sailing" ? "推进航行轨" : "推进改造轨",
-            ok: error === null,
-            detail: error === null ? `现在 ${p[track]} 级` : reasonText(error),
-        });
-    }
-
-    const scholar = DISCIPLINES.flatMap((d) => scholarChoices(state, seat, d));
-    const scholarOk = scholar.filter((c) => c.error === null);
-    lines.push({
-        label: "派学者",
-        ok: scholarOk.length > 0,
-        detail: scholarOk.length > 0
-            ? `手上 ${p.scholars} 个学者`
-            : reasonText(scholar[scholar.length - 1].error!),
-    });
-
-    // 能量行动、书本行动、pass 在引擎 M1-6 才实现。拿"能量行动：7 金币"问一下引擎，还没实现就说一声
-    if (validateMove(state, seat, { t: "powerAction", id: "coins7" }) === "bad-move") {
-        lines.push({ label: "其他行动", ok: false, detail: "能量行动、书本行动、pass：引擎还没实现（M1-6）" });
-    }
-    return lines;
 }
 
 /** 改造的预览：从现在的地形开始，每多一铲变成什么，直到变成家园地形 */

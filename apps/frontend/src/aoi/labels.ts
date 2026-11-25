@@ -1,7 +1,7 @@
 // 界面上的中文文案。引擎只用英文 id，翻译统一放在这里。
 // 派系、地形的中文名照中文版配件；学科的中文名还是暂定译名。
 import type {
-    BonusTileId, BookActionId, BookColor, BuildingType, CompetencyId, ConversionId, Discipline, DraftCategory,
+    BonusTileId, BookActionId, BookColor, BuildingType, CityTileId, CompetencyId, ConversionId, Discipline, DraftCategory,
     FactionId, Phase, PowerActionId, RuleError, StructureType, Terrain,
 } from "@aoi/engine/aoi";
 
@@ -129,6 +129,13 @@ export const BONUS_TILE_LABEL: Record<BonusTileId, { short: string; text: string
     coins6: { short: "6 金币", text: "收入 6 金币" },
 };
 
+/** 回合奖励板块上的特殊行动（橙色八边形）做什么 */
+export const SPECIAL_ACTION_LABEL: Record<"spade" | "bridge" | "level", string> = {
+    spade: "免费 1 铲改造并建造",
+    bridge: "免费建一座桥",
+    level: "任选学科前进 1 级",
+};
+
 /** 7 种资源转换 */
 export const CONVERSION_LABEL: Record<ConversionId, string> = {
     power5ToScholar: "5 能量 → 1 学者",
@@ -144,3 +151,44 @@ export const CONVERSION_LABEL: Record<ConversionId, string> = {
 export const DRAFT_CATEGORY_NAME: Record<DraftCategory, string> = {
     planning: "规划板", faction: "派系", bonusTile: "回合奖励板块", palaceTile: "宫殿板块",
 };
+
+/**
+ * 回合计分板块（M1-7 起引擎里才有这些编号；之前的编号是 rs-1 这样的临时编号，查不到就显示背面）。
+ * 左半边：这一轮每做一次某种行动得几分；右半边：轮末某门学科每几级拿什么
+ */
+export const ROUND_SCORE_LABEL: Record<string, { action: string; science: string }> = {
+    workshopLaw: { action: "每建 1 个工坊 +2 分", science: "法律每 3 级：1 个学者" },
+    workshopBanking: { action: "每建 1 个工坊 +2 分", science: "银行每 3 级：4 能量" },
+    guildLaw: { action: "每建 1 个行会 +3 分", science: "法律每 3 级：1 本任选颜色的书" },
+    guildMedicine: { action: "每建 1 个行会 +3 分", science: "医学每 4 级：1 把免费铲子" },
+    schoolBanking: { action: "每建 1 个学校 +4 分", science: "银行每 1 级：1 金币" },
+    bigMedicine: { action: "每建 1 个宫殿或大学 +5 分", science: "医学每 2 级：1 个工具" },
+    bigBanking: { action: "每建 1 个宫殿或大学 +5 分", science: "银行每 2 级：1 个工具" },
+    spadeEngineering: { action: "每用 1 把铲子 +2 分", science: "工程每 1 级：1 金币" },
+    levelMedicine: { action: "学科每前进 1 级 +1 分", science: "医学每 3 级：1 本任选颜色的书" },
+    cityEngineering: { action: "每拿 1 个城市板块 +5 分", science: "工程每 4 级：1 把免费铲子" },
+    trackEngineering: { action: "每推进 1 次航行轨或改造轨 +3 分", science: "工程每 3 级：1 个学者" },
+    innovationLaw: { action: "每拿 1 个创新板块 +5 分", science: "法律每 2 级：3 能量" },
+};
+
+/** 终局回合计分板块（M1-8 定正式编号；现在的 frs-1 这种临时编号查不到，就不显示） */
+export const FINAL_ROUND_LABEL: Record<string, string> = {
+    guild: "最后一轮：每建 1 个行会 +3 分",
+    borderWorkshop: "最后一轮：在版图边缘每建 1 个工坊 +3 分",
+    school: "最后一轮：每建 1 个学校 +4 分",
+    workshop: "最后一轮：每建 1 个工坊 +2 分",
+};
+
+/** 城市板块（M1-7 起引擎里才有这些编号）。组成城市时拿一张，另外都给 1 把钥匙 */
+export const CITY_TILE_LABEL: Record<string, string> = {
+    tools: "4 分 + 3 个工具",
+    spades: "5 分 + 2 把免费铲子",
+    books: "5 分 + 2 本任选颜色的书",
+    coins: "6 分 + 6 金币",
+    levels: "7 分 + 每门学科前进 1 级",
+    power: "8 分 + 8 能量",
+    scholar: "8 分 + 1 个学者",
+};
+
+/** 7 种城市板块，按分数从低到高摆 */
+export const CITY_TILES_IN_ORDER: CityTileId[] = ["tools", "spades", "books", "coins", "levels", "power", "scholar"];
