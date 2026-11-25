@@ -101,10 +101,10 @@ export function createGame(options: SetupOptions, seed: string): GameState {
             roundScores: take(ROUND_SCORE_IDS).slice(0, 6),
             finalRoundScore: take(FINAL_ROUND_SCORE_IDS)[0],
             bonusTiles: bonusOnBoard.map((id) => ({ id, coins: 1 })),
-            innovationsAvailable: [], // M3
-            competenciesLeft: {},     // M1-4
+            innovationsAvailable: [], 
+            competenciesLeft: {},     
             palaceTilesAvailable: palaceTiles,
-            cityTilesLeft: {},        // M1-5
+            cityTilesLeft: {},        
         },
         finalScores: null,
     };
@@ -361,7 +361,6 @@ export function applyInitialWorkshop(state: GameState, seat: Seat, hex: HexId): 
  *  - 荒地：1 本任选颜色的书
  *  - 蜥蜴：任选学科前进 1 级，共 2 次
  *  - 沙漠：1 把免费铲子，不能顺带建工坊
- * 这些决策怎么处理在 M1-4 写。
  */
 function finishSetup(state: GameState): GameState {
     const pending: Decision[] = [];

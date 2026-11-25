@@ -87,3 +87,14 @@ export const SCIENCE_INCOME: Record<Discipline, ResourceBundle> = {
 export const DRAFT_EXTRA: Record<DraftCategory, number> = {
     planning: 1, faction: 1, bonusTile: 3, palaceTile: 1,
 };
+
+/** 改造轨每一级：每把铲子要付几个工具。来源：规划板改造轨 */
+export const TOOLS_PER_SPADE: readonly number[] = [3, 2, 1];
+
+/** 升级路线：升级成某种建筑，原来必须是哪种建筑。来源：规则书"升级建筑" */
+export const UPGRADE_FROM: Record<"guild" | "school" | "palace" | "university", BuildingType> = {
+    guild: "workshop",
+    school: "guild",
+    palace: "guild",
+    university: "school",
+};

@@ -1,0 +1,13 @@
+diff --git a/apps/frontend/src/aoi/mock.ts b/apps/frontend/src/aoi/mock.ts
+index e160007..5206d38 100644
+--- a/apps/frontend/src/aoi/mock.ts
++++ b/apps/frontend/src/aoi/mock.ts
+@@ -62,7 +62,7 @@ export const MOCK_STATE: GameState = {
+     phase: "actions",
+     turnOrder: [1, 0, 2],
+     nextTurnOrder: [],
+-    turn: { seat: 0, mainActionDone: false },   // 朋友A 刚结束回合，轮到小唐
++    turn: { seat: 0, mainActionDone: false, builtHexes: [] },   // 朋友A 刚结束回合，轮到小唐
+     pending: [{ id: "d-41", seat: 0, kind: "leech", from: 1, power: 2, vpCost: 1 }],
+     hexes: mockHexes(),
+     bridges: [{ owner: 1, a: "B1", b: "A3" }],

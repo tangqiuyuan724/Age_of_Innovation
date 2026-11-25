@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 3;
+export const CONTRACT_VERSION = 4;
 
 // ---------- 基础 ----------
 
@@ -307,6 +307,8 @@ export interface TurnInfo {
     seat: Seat;
     /** 本回合是否已经做过主行动 */
     mainActionDone: boolean;
+    /** 本回合新建或升级了建筑的格子。回合结束时，从这些格子向邻居发起吸能 */
+    builtHexes: HexId[];
 }
 
 /**

@@ -1,6 +1,6 @@
 // 地图数据。每个字符是一格：D 沙漠、P 平原、S 沼泽、L 湖泊、F 森林、M 山脉、W 荒地，~ 是河流。
 // 来源：tools/maps/aoi-base.json（M1-2 录入），搬进引擎后服务端和前端都从这里拿。
-import type { MapDef } from "../types.ts";
+import type { MapDef } from "../types.js";
 
 export const MAPS: Record<string, MapDef> = {
     "aoi-base": {
