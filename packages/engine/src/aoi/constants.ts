@@ -99,3 +99,18 @@ export const UPGRADE_FROM: Record<"guild" | "school" | "palace" | "university", 
     university: "school",
 };
 
+/** 学科升到这些等级时获得能量。来源：学科展示板上的紫色圆圈 */
+export const SCIENCE_POWER: Readonly<Record<number, number>> = { 3: 1, 5: 2, 7: 2, 12: 3 };
+
+/** 每门学科下面 4 个学者格：第 1 格升 3 级，另外 3 格升 2 级。来源：学科展示板底部 */
+export const SCHOLAR_SPACE_LEVELS: readonly number[] = [3, 2, 2, 2];
+
+/** 能力板块展示区从上到下 3 行，拿到时的奖励（都是这一列的学科）。来源：创新展示板 */
+export const COMPETENCY_ROW_REWARD: readonly { levels: number; books: number }[] = [
+    { levels: 3, books: 0 },
+    { levels: 2, books: 1 },
+    { levels: 1, books: 2 },
+];
+
+/** 每种能力板块的张数 */
+export const COMPETENCY_COPIES = 4;

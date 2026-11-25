@@ -4,3 +4,4 @@ export * from "./bonusTiles.js";
 export * from "./palaceTiles.js";
 export * from "./tiles.js";
 export * from "./maps.js";
+export * from "./competencies.js";

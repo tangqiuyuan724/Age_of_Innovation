@@ -83,6 +83,7 @@ export const RULE_ERROR_TEXT: Record<RuleError, string> = {
     "limit-reached": "已经达到上限",
     "action-taken": "这个行动本轮已经被用过了",
     "tile-unavailable": "这个板块已经没有了",
+    "space-occupied": "这个学者格已经有人了",
     "invalid-choice": "选择无效",
     "bad-move": "操作格式不对",
 };
@@ -97,7 +98,6 @@ export function describeDecision(d: Decision, name: (seat: number) => string): s
         case "spades": return `使用 ${d.spades} 把免费铲子${d.canBuild ? "，可以顺带建工坊" : ""}`;
         case "bridge": return "选择桥的位置";
         case "scienceLevels": return `选择一门学科前进 ${d.levels} 级`;
-        case "trackReward": return "轨道奖励：拿分数，还是拿一本书";
         case "competency": return "选择一个能力板块";
         case "palaceTile": return "选择一个宫殿板块";
         case "cityTile": return "选择一个城市板块";

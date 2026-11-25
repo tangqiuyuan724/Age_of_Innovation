@@ -19,6 +19,15 @@ export interface PlanningDisplay {
      * 升级时旧建筑放回这一行最右边的空格，所以"露出的格子"永远是前面几格。
      */
     income: Record<BuildingType, ResourceBundle[]>;
+    /** 航行轨、改造轨前进一格的费用：印在两条轨道下面 */
+    sailingCost: ResourceBundle;
+    terraformingCost: ResourceBundle;
+    /**
+     * 前进到每一格的奖励，下标 = 等级。下标 0 是起点，没有奖励。
+     * 灰色的书表示"任选颜色"。数组长度减 1 就是这条轨道的最高等级
+     */
+    sailingRewards: ResourceBundle[];
+    terraformingRewards: ResourceBundle[];
 }
 
 const TOOL: ResourceBundle = { tools: 1 };
@@ -43,15 +52,20 @@ function display(id: PlanningId, overrides: Partial<PlanningDisplay> = {}): Plan
         startSpades: 0,
         baseIncome: TOOL,
         income: STANDARD_INCOME,
+        sailingCost: { coins: 4, scholars: 1 },
+        terraformingCost: { coins: 5, tools: 1, scholars: 1 },
+        sailingRewards: [{}, { vp: 2 }, { books: { gray: 2 } }, { vp: 4 }],
+        terraformingRewards: [{}, { books: { gray: 2 } }, { vp: 6 }],
         ...overrides,
     };
 }
 
 export const PLANNING_DISPLAYS: Record<PlanningId, PlanningDisplay> = {
     desert: display("desert", { startSpades: 1 }),
-    plains: display("plains"),
+    plains: display("plains", { terraformingCost: { coins: 1, tools: 1, scholars: 1 } }),
     swamp: display("swamp", { start: { scholars: 1, tools: 3, coins: 15 } }),
-    lake: display("lake", { startSailing: 1 }),
+    // 湖泊的航行轨从 1 开始，后面两格的奖励也和别人不一样
+    lake: display("lake", { startSailing: 1, sailingRewards: [{}, {}, { vp: 3 }, { books: { gray: 2 } }] }),
     forest: display("forest", { startScience: { banking: 1, law: 1, engineering: 1, medicine: 1 } }),
     mountain: display("mountain", {
         baseIncome: { tools: 1, coins: 2 },

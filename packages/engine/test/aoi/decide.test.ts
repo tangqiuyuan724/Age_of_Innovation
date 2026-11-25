@@ -85,7 +85,7 @@ describe("沙漠开局的免费铲子", () => {
 describe("这一课还没实现的决策", () => {
     it("bad-move", () => {
         const game = readyGame();
-        const waiting = { ...game, pending: [{ id: "c", seat: 0, kind: "competency" as const, options: [] }] };
-        expect(validateDecide(waiting, 0, "c", { kind: "competency", tile: "x" })).toBe("bad-move");
+        const waiting = { ...game, pending: [{ id: "b", seat: 0, kind: "bridge" as const }] };
+        expect(validateDecide(waiting, 0, "b", { kind: "bridge", a: "A1", b: "A2" })).toBe("bad-move");
     });
 });

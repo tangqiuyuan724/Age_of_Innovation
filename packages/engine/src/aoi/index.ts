@@ -19,3 +19,4 @@ export * from "./leech.js";
 export * from "./endturn.js";
 export * from "./decide.js";
 export * from "./move.js";
+export * from "./content/competencies.js";

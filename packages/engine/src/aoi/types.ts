@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 4;
+export const CONTRACT_VERSION = 5;
 
 // ---------- 基础 ----------
 
@@ -69,7 +69,20 @@ export type FactionId =
 export type PlanningId = Terrain;
 export type PalaceTileId = number; // 宫殿板块
 export type InnovationId = string;  // 大创板块
-export type CompetencyId = string;  //能力板块
+/** 12 种能力板块（每种 4 张）。效果在 M3 实现，这一课只用到编号。顺序和图片编号 #1~#12 一样 */
+export type CompetencyId =
+    | "incomeBookPower"   // #1 收入：1 本任选颜色的书、1 能量
+    | "bonusToolVpCoins"  // #2 立即：1 工具、5 分、2 金币
+    | "passLowestScience" // #3 pass 时：按自己最低的学科等级得分
+    | "incomeToolLevel"   // #4 收入：1 工具，任选学科前进 1 级
+    | "bonusSpades"       // #5 立即：一次"改造并建造"，带 2 把免费铲子
+    | "tower"             // #6 立即：建一座中立塔楼；收入 2 能量、2 金币
+    | "incomeVpCoins"     // #7 收入：3 分、2 金币
+    | "passCityVp"        // #8 pass 时：每个城市板块 2 分
+    | "borderWorkshopVp"  // #9 在版图边缘的格子上建工坊得 3 分
+    | "actionPower4"      // #10 特殊行动：获得 4 能量
+    | "scholarVp"         // #11 派学者（含退回学者）得 2 分
+    | "annexes";          // #12 立即：2 个中立附楼
 export type CityTileId = string;    // 城市板块
 /** 10 个回合奖励板块 */
 export type BonusTileId =
@@ -294,7 +307,12 @@ export interface BoardState {
     /** 场上可选的回合奖励板块（含上面累积的金币） */
     bonusTiles: BonusTileOnBoard[];
     innovationsAvailable: InnovationId[];   // 可选的大创板块
-    competenciesLeft: Record<CompetencyId, number>; // 剩余的能力板块
+    /**
+     * 能力板块展示区：每门学科一列，每列从上到下 3 格，开局随机摆放。
+     * 从第 1、2、3 行拿，分别得到这一列学科的 3 级 / 2 级 + 1 本书 / 1 级 + 2 本书
+     */
+    competencyGrid: Record<Discipline, CompetencyId[]>;
+    competenciesLeft: Record<CompetencyId, number>; // 剩余的能力板块（开局各 4 张）
     palaceTilesAvailable: PalaceTileId[];   // 可选的宫殿板块
     cityTilesLeft: Record<CityTileId, number>;  // 剩余的城市板块
 }
@@ -373,7 +391,7 @@ export type Decision =
     | (DecisionBase & { kind: "spades"; spades: number; canBuild: boolean })    // 使用免费铲子
     | (DecisionBase & { kind: "bridge" })   // 建桥
     | (DecisionBase & { kind: "scienceLevels"; levels: number })    // 选科学轨前进
-    | (DecisionBase & { kind: "trackReward" })  // 航行/改造轨奖励
+    // | (DecisionBase & { kind: "trackReward" })  // 航行/改造轨奖励
     | (DecisionBase & { kind: "competency"; options: CompetencyId[] })  // 选能力板块
     | (DecisionBase & { kind: "palaceTile"; options: PalaceTileId[] })  // 选宫殿板块
     | (DecisionBase & { kind: "cityTile"; cityId: number; options: CityTileId[] }) // 选城市板块
@@ -388,7 +406,7 @@ export type DecisionChoice =
     | { kind: "spades"; skip: true }
     | { kind: "bridge"; a: HexId; b: HexId }
     | { kind: "scienceLevels"; discipline: Discipline }
-    | { kind: "trackReward"; reward: "vp" | Discipline }
+    // | { kind: "trackReward"; reward: "vp" | Discipline }
     | { kind: "bookColor"; books: Partial<Record<Discipline, number>> }
     | { kind: "draftPick"; item: DraftItem }
     | { kind: "competency"; tile: CompetencyId }
@@ -455,5 +473,6 @@ export type RuleError =
     | "limit-reached"   // 已经达到上限
     | "action-taken"    // 这个行动本轮已经被用过了
     | "tile-unavailable"    // 这个板块已经没有了
+    | "space-occupied"  // 这个学者格已经有人了
     | "invalid-choice"  // 选择无效	
     | "bad-move";   // 操作格式不对

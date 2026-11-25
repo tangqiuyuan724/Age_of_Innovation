@@ -31,7 +31,7 @@ export function validateDecide(state: GameState, seat: Seat, id: string, choice:
         // 下面几种在 M1-5、M1-6 实现
         case "bridge":
         case "scienceLevels":
-        case "trackReward":
+        // case "trackReward":
         case "competency":
         case "cityTile":
             return "bad-move";

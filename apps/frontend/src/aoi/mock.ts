@@ -75,7 +75,7 @@ export const MOCK_STATE: GameState = {
             power: [2, 8, 2], sailing: 1, terraforming: 1,
             science: { banking: 3, law: 5, engineering: 1, medicine: 0 },
             buildingsLeft: { workshop: 7, guild: 3, school: 2, university: 1, palace: 1 },
-            competencies: ["law-2"], bonusTile: "levelAction",
+            competencies: ["incomeVpCoins"], bonusTile: "levelAction",
         }),
         player({
             seat: 1, faction: "moles", homeTerrain: "mountain",
@@ -126,7 +126,17 @@ export const MOCK_STATE: GameState = {
             { id: "scholarSend", coins: 1 },
         ],
         innovationsAvailable: [],
-        competenciesLeft: {},
+        competencyGrid: {
+            banking: ["incomeBookPower", "bonusToolVpCoins", "passLowestScience"],
+            law: ["incomeToolLevel", "bonusSpades", "tower"],
+            engineering: ["incomeVpCoins", "passCityVp", "borderWorkshopVp"],
+            medicine: ["actionPower4", "scholarVp", "annexes"],
+        },
+        competenciesLeft: {
+            incomeBookPower: 4, bonusToolVpCoins: 4, passLowestScience: 4, incomeToolLevel: 4,
+            bonusSpades: 4, tower: 4, incomeVpCoins: 3, passCityVp: 4,
+            borderWorkshopVp: 4, actionPower4: 4, scholarVp: 4, annexes: 4,
+        },
         palaceTilesAvailable: [3, 12, 17],
         cityTilesLeft: {},
     },
