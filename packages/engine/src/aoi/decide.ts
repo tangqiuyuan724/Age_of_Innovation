@@ -2,6 +2,7 @@
 // 这里还放着两种决策：选书的颜色、免费铲子（沙漠开局、能量行动、书本行动、特殊行动都会给）。
 import { applyBridge, validateBridge } from "./bridge.js";
 import { spadeCost } from "./build.js";
+import { applyCityTile, validateCityTile } from "./city.js";
 import { applyCompetency, validateCompetency } from "./competency.js";
 import { BUILD_WORKSHOP_COST, DISCIPLINES } from "./constants.js";
 import { applyLeech, validateLeech } from "./leech.js";
@@ -42,9 +43,7 @@ export function validateDecide(state: GameState, seat: Seat, id: string, choice:
         case "bridge":
             if ("skip" in choice) return d.seat === seat ? null : "not-your-decision";
             return validateBridge(state, seat, choice.a, choice.b);
-        // 选城市板块在 M1-7 实现
-        case "cityTile":
-            return "bad-move";
+        case "cityTile": return validateCityTile(state, seat, choice.tile);
         default: {
             const unhandled: never = choice;
             return unhandled;
@@ -69,8 +68,11 @@ export function applyDecide(state: GameState, seat: Seat, choice: DecisionChoice
         case "competency": return applyCompetency(state, seat, choice.tile);
         case "spades": return "skip" in choice ? applySkip(state) : applySpades(state, seat, choice.hex, choice.build);
         case "bridge": return "skip" in choice ? applySkip(state) : applyBridge(state, seat, choice.a, choice.b);
-        default:
-            throw new Error(`还没实现的决策：${choice.kind}`);
+        case "cityTile": return applyCityTile(state, seat, choice.tile);
+        default: {
+            const unhandled: never = choice;
+            throw new Error(`不认识的决策：${JSON.stringify(unhandled)}`);
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 // 资源转换、牺牲能量这两种自由行动很短，也直接写在这里。
 import { applyBookAction, validateBookAction } from "./bookActions.js";
 import { applyTerraformAndBuild, validateTerraformAndBuild } from "./build.js";
+import { updateCities } from "./city.js";
 import { DISCIPLINES } from "./constants.js";
 import { convert } from "./convert.js";
 import { applyDecide, validateDecide } from "./decide.js";
@@ -9,12 +10,14 @@ import { applyEndTurn, validateEndTurn } from "./endturn.js";
 import { applyPass, validatePass } from "./pass.js";
 import { sacrificePower } from "./power.js";
 import { applyPowerAction, validatePowerAction } from "./powerActions.js";
+import { autoAdvance } from "./round.js";
+import { actionPoints } from "./roundScore.js";
 import { applySendScholar, validateSendScholar } from "./scholar.js";
 import { applySpecialAction, validateSpecialAction } from "./specialActions.js";
 import { applyAdvanceTrack, validateAdvanceTrack } from "./tracks.js";
-import { advance, checkFreeAction, type Applied } from "./turn.js";
+import { checkFreeAction, type Applied } from "./turn.js";
 import { applyUpgrade, validateUpgrade } from "./upgrade.js";
-import type { GameState, Move, RuleError, Seat } from "./types.js";
+import type { GameEvent, GameState, Move, RuleError, Seat } from "./types.js";
 
 /** 这条指令现在能不能执行？能返回 null，不能返回原因 */
 export function validateMove(state: GameState, seat: Seat, move: Move): RuleError | null {
@@ -42,12 +45,37 @@ export function validateMove(state: GameState, seat: Seat, move: Move): RuleErro
 }
 
 /**
- * 执行指令。调用前必须先用 validateMove 检查。
- * 执行完以后自动推进（比如开局的决策都处理完了，就开始第 1 轮），再把 version 加 1
+ * 执行指令。调用前必须先用 validateMove 检查。执行完以后：
+ *  1. 建了建筑、升级了建筑、建了桥的人，整理城市（可能组成新城市）
+ *  2. 按这一步发生的事件加行动分（回合计分板块、回合奖励板块）
+ *  3. 自动推进（开始第 1 轮、一轮结束、进入下一轮……）
+ * 最后把 version 加 1
  */
 export function applyMove(state: GameState, seat: Seat, move: Move): Applied {
     const result = dispatch(state, seat, move);
-    return { state: { ...advance(result.state), version: state.version + 1 }, events: result.events };
+    const cities = settleCities(result.state, result.events);
+    const points = actionPoints(cities.state, [...result.events, ...cities.events]);
+    const next = autoAdvance(points.state);
+    return {
+        state: { ...next.state, version: state.version + 1 },
+        events: [...result.events, ...cities.events, ...points.events, ...next.events],
+    };
+}
+
+/** 这一步建了建筑、升级了建筑或者建了桥的人，整理他们的城市 */
+function settleCities(state: GameState, events: GameEvent[]): Applied {
+    const seats = new Set<Seat>();
+    for (const e of events) {
+        if (e.type === "built" || e.type === "upgraded" || e.type === "bridgeBuilt") seats.add(e.seat);
+    }
+    let next = state;
+    const founded: GameEvent[] = [];
+    for (const seat of seats) {
+        const result = updateCities(next, seat);
+        next = result.state;
+        founded.push(...result.events);
+    }
+    return { state: next, events: founded };
 }
 
 function dispatch(state: GameState, seat: Seat, move: Move): Applied {

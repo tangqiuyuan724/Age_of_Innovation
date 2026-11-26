@@ -81,11 +81,3 @@ describe("沙漠开局的免费铲子", () => {
         expect(state.hexes).toEqual(setup.hexes);
     });
 });
-
-describe("这一课还没实现的决策", () => {
-    it("bad-move", () => {
-        const game = readyGame();
-        const waiting = { ...game, pending: [{ id: "c", seat: 0, kind: "cityTile" as const, cityId: 0, options: ["x"] }] };
-        expect(validateDecide(waiting, 0, "c", { kind: "cityTile", tile: "x" })).toBe("bad-move");
-    });
-});

@@ -41,7 +41,10 @@ export function applyAdvanceTrack(state: GameState, seat: Seat, track: Track): A
 
     const pending: Decision[] = [...state.pending];
     if (bookChoices > 0) pending.push({ id: `track-${state.version}`, seat, kind: "bookColor", count: bookChoices });
-    const events: GameEvent[] = [{ type: "resources", seat, delta: negateBundle(cost), reason: "advanceTrack" }];
+        const events: GameEvent[] = [
+        { type: "track", seat, track, from: p[track], to: level },
+        { type: "resources", seat, delta: negateBundle(cost), reason: "advanceTrack" },
+    ];
     if (Object.keys(reward).length > 0) events.push({ type: "resources", seat, delta: reward, reason: "trackReward" });
     return {
         state: {

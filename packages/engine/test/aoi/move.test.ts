@@ -31,7 +31,7 @@ describe("validateMove / applyMove：按指令种类分给各自的函数", () =
         expect(validateMove(state, swamp, answer)).toBeNull();
         expect(applyMove(state, swamp, answer).state.pending).toEqual([]);
     });
-        it("还没实现的主行动（研发创新板块在 M3）：bad-move", () => {
+    it("还没实现的主行动（研发创新板块在 M3）：bad-move", () => {
         expect(validateMove(game, first, { t: "developInnovation", tile: "x", books: {} })).toBe("bad-move");
     });
     it("每执行一条指令，version 加 1；传入的状态不变", () => {
@@ -168,7 +168,7 @@ describe("M1-6 的四个主行动", () => {
         expect(validateMove(s, forest, move)).toBeNull();
         expect(applyMove(s, forest, move).state.pending[0]).toMatchObject({ kind: "scienceLevels", levels: 1 });
     });
-    it("三个人依次 pass、结束回合：轮到的人跳过已经 pass 的；最后没人可轮了", () => {
+    it("三个人依次 pass、结束回合：轮到的人跳过已经 pass 的；最后一个人结束回合后进入第 2 轮", () => {
         const tiles = [{ id: "spadeAction" as const, coins: 0 }, { id: "riverWorkshop" as const, coins: 0 }, { id: "bridgeAction" as const, coins: 0 }];
         let state: GameState = { ...game, board: { ...game.board, bonusTiles: tiles } };
         const order = state.turnOrder;
@@ -177,8 +177,9 @@ describe("M1-6 的四个主行动", () => {
             state = applyMove(state, seat, { t: "pass", bonusTile: tiles[i].id }).state;
             state = applyMove(state, seat, { t: "endTurn" }).state;
         }
-        expect(state.turn).toBeNull();
-        expect(state.nextTurnOrder).toEqual(order);
-        expect(state.players.every((p) => p.passed)).toBe(true);
+        expect(state.round).toBe(2);
+        expect(state.turnOrder).toEqual(order);
+        expect(state.turn!.seat).toBe(order[0]);
+        expect(state.players.every((p) => !p.passed)).toBe(true);
     });
 });

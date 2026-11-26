@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 6;
+export const CONTRACT_VERSION = 7;
 
 // ---------- 基础 ----------
 
@@ -83,7 +83,15 @@ export type CompetencyId =
     | "actionPower4"      // #10 特殊行动：获得 4 能量
     | "scholarVp"         // #11 派学者（含退回学者）得 2 分
     | "annexes";          // #12 立即：2 个中立附楼
-export type CityTileId = string;    // 城市板块
+/** 7 种城市板块（每种 3 张）。每张都给 1 把钥匙，再加上这里写的分数和奖励 */
+export type CityTileId =
+    | "tools"    // 4 分、3 工具
+    | "spades"   // 5 分、一次"改造并建造"，带 2 把免费铲子
+    | "books"    // 5 分、2 本任选颜色的书
+    | "coins"    // 6 分、6 金币
+    | "levels"   // 7 分、每门学科前进 1 级
+    | "power"    // 8 分、8 能量
+    | "scholar"; // 8 分、1 学者
 /** 10 个回合奖励板块 */
 export type BonusTileId =
     | "riverWorkshop"    // 行动：在河边建工坊得 2 分；航行范围 +1
@@ -96,7 +104,23 @@ export type BonusTileId =
     | "schoolsPass"      // pass 时每座学校任选学科前进 1 级；收入 4 金币
     | "power4coins2"     // 收入 4 能量、2 金币
     | "coins6";          // 收入 6 金币
-export type RoundScoreId = string;  // 轮次积分板块
+/**
+ * 12 个回合计分板块。名字 = 左半边（这一轮做什么行动得分）+ 右半边（轮末按哪门学科给科学奖励）。
+ * 具体分数和奖励见 content/roundScores.ts
+ */
+export type RoundScoreId =
+    | "workshopLaw"      // 建工坊 2 分；法律每 3 级 1 学者
+    | "workshopBanking"  // 建工坊 2 分；银行每 3 级 4 能量
+    | "guildLaw"         // 建行会 3 分；法律每 3 级 1 本书
+    | "guildMedicine"    // 建行会 3 分；医学每 4 级 1 铲
+    | "schoolBanking"    // 建学校 4 分；银行每 1 级 1 金币
+    | "bigMedicine"      // 建宫殿或大学 5 分；医学每 2 级 1 工具
+    | "bigBanking"       // 建宫殿或大学 5 分；银行每 2 级 1 工具
+    | "spadeEngineering" // 每用 1 把铲子 2 分；工程每 1 级 1 金币
+    | "levelMedicine"    // 学科每前进 1 级 1 分；医学每 3 级 1 本书
+    | "cityEngineering"  // 拿城市板块 5 分；工程每 4 级 1 铲
+    | "trackEngineering" // 推进航行轨或改造轨 3 分；工程每 3 级 1 学者
+    | "innovationLaw";   // 拿创新板块 5 分；法律每 2 级 3 能量
 export type FinalRoundScoreId = string; // 最终轮次积分板块
 /** 开局时一组"派系 + 规划板 + 回合奖励板块"的编号 */
 export type SetupSetId = number;
@@ -452,6 +476,8 @@ export type GameEvent =
     | { type: "leech"; seat: Seat; from: Seat; power: number; vpCost: number; accepted: boolean }   // 吸能结果
     | { type: "science"; seat: Seat; discipline: Discipline; from: number; to: number } // 学科前进
     | { type: "cityFounded"; seat: Seat; cityId: number; hexes: HexId[] }   // 组成城市
+    | { type: "track"; seat: Seat; track: "sailing" | "terraforming"; from: number; to: number }   // 航行轨、改造轨前进
+    | { type: "scholarSent"; seat: Seat; discipline: Discipline; space: number | "return" }   // 派学者
     | { type: "tileTaken"; seat: Seat; tile: string; kind: "palace" | "innovation" | "competency" | "city" | "bonus" }  // 拿了板块
     | { type: "passed"; seat: Seat; bonusTile: BonusTileId | null } // 结束本轮
     | { type: "gameEnded"; scores: FinalScore[] };  // 游戏结束

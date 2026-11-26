@@ -60,6 +60,7 @@ describe("派学者：执行", () => {
         const { state, events } = applySendScholar(game, plains, "law", 0);
         expect(state.turn!.mainActionDone).toBe(true);
         expect(events).toEqual([
+            { type: "scholarSent", seat: plains, discipline: "law", space: 0 },
             { type: "resources", seat: plains, delta: { scholars: -1 }, reason: "sendScholar" },
             { type: "science", seat: plains, discipline: "law", from: 0, to: 3 },
             { type: "resources", seat: plains, delta: { power: 1 }, reason: "science" },

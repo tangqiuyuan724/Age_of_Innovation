@@ -8,14 +8,16 @@ import { FACTIONS, FACTION_IDS } from "./content/factions.js";
 import { MAPS } from "./content/maps.js";
 import { PALACE_TILE_ALWAYS, PALACE_TILE_IDS } from "./content/palaceTiles.js";
 import { PLANNING_DISPLAYS, PLANNING_IDS } from "./content/planning.js";
-import { BOOK_ACTION_IDS, FINAL_ROUND_SCORE_IDS, ROUND_SCORE_IDS } from "./content/tiles.js";
+import { BOOK_ACTION_IDS, FINAL_ROUND_SCORE_IDS } from "./content/tiles.js";
+import { ROUND_SCORE_IDS, pickRoundScores } from "./content/roundScores.js";
+import { CITY_TILE_COPIES, CITY_TILE_IDS } from "./content/cityTiles.js";
 import { COMPETENCY_IDS, layCompetencies } from "./content/competencies.js";
 import { initialHexes, parseMap } from "./map.js";
 import { addBundles, gainResources } from "./resources.js";
 import { randomInt, seedFromString, shuffle } from "./rng.js";
 import {
     CONTRACT_VERSION,
-    type BonusTileId, type CompetencyId, type Decision, type DraftCategory, type DraftItem, type DraftPicks, type DraftPool,
+    type BonusTileId, type CityTileId, type CompetencyId, type Decision, type DraftCategory, type DraftItem, type DraftPicks, type DraftPool,
     type GameState, type HexId, type HexState, type PalaceTileId, type PlayerState, type RuleError,
     type Seat, type SetupOptions, type SetupSet, type SetupSetId,
 } from "./types.js";
@@ -100,14 +102,14 @@ export function createGame(options: SetupOptions, seed: string): GameState {
                 medicine: [null, null, null, null],
             },
             level12: { banking: null, law: null, engineering: null, medicine: null },
-            roundScores: take(ROUND_SCORE_IDS).slice(0, 6),
+            roundScores: pickRoundScores(take(ROUND_SCORE_IDS)),
             finalRoundScore: take(FINAL_ROUND_SCORE_IDS)[0],
             bonusTiles: bonusOnBoard.map((id) => ({ id, coins: 1 })),
             innovationsAvailable: [],
             competencyGrid: layCompetencies(take(COMPETENCY_IDS)),
             competenciesLeft: Object.fromEntries(COMPETENCY_IDS.map((id) => [id, COMPETENCY_COPIES])) as Record<CompetencyId, number>,
             palaceTilesAvailable: palaceTiles,
-            cityTilesLeft: {},
+            cityTilesLeft: Object.fromEntries(CITY_TILE_IDS.map((id) => [id, CITY_TILE_COPIES])) as Record<CityTileId, number>,
         },
         finalScores: null,
     };

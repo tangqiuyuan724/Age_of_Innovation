@@ -48,6 +48,10 @@ export function applySendScholar(state: GameState, seat: Seat, discipline: Disci
     const result = advanceScience(next, seat, discipline, levels);
     return {
         state: { ...result.state, turn: { ...state.turn!, mainActionDone: true } },
-        events: [{ type: "resources", seat, delta: { scholars: -1 }, reason: "sendScholar" }, ...result.events],
+        events: [
+            { type: "scholarSent", seat, discipline, space },
+            { type: "resources", seat, delta: { scholars: -1 }, reason: "sendScholar" },
+            ...result.events,
+        ],
     };
 }

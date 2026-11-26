@@ -1,7 +1,7 @@
-// 10 个回合奖励板块：收入、特殊行动、pass 时的奖励。
-// 拿着板块时做某些行动得分（比如"派学者得 2 分"）在 M1-7 和回合计分板块一起加。
+// 10 个回合奖励板块：收入、特殊行动、pass 时的奖励、拿着板块时做某些行动得分。
 // 每个板块的完整效果写在 types.ts 的 BonusTileId 注释里。
 import type { BonusTileId, BuildingType, ResourceBundle } from "../types.js";
+import type { ScoreAction } from "./roundScores.js";
 
 export interface BonusTileDef {
     id: BonusTileId;
@@ -11,12 +11,14 @@ export interface BonusTileDef {
     special?: "spade" | "bridge" | "level";
     /** pass 时的奖励：自己每有一座 buildings 里的建筑，得 vp 分、任选学科前进 levels 级 */
     pass?: { buildings: BuildingType[]; vp: number; levels: number };
+    /** 拿着这块板块时，每做一次 action 得 vp 分（和回合计分板块一样，只在行动阶段算） */
+    action?: { action: ScoreAction; vp: number };
 }
 
 export const BONUS_TILES: Record<BonusTileId, BonusTileDef> = {
-    riverWorkshop: { id: "riverWorkshop", income: {} },
-    scholarSend: { id: "scholarSend", income: { scholars: 1 } },
-    guildBuild: { id: "guildBuild", income: { power: 3 } },
+    riverWorkshop: { id: "riverWorkshop", income: {}, action: { action: "riverWorkshop", vp: 2 } },
+    scholarSend: { id: "scholarSend", income: { scholars: 1 }, action: { action: "scholar", vp: 2 } },
+    guildBuild: { id: "guildBuild", income: { power: 3 }, action: { action: "guild", vp: 3 } },
     bigBuildingsPass: {
         id: "bigBuildingsPass", income: { tools: 1 },
         pass: { buildings: ["university", "palace"], vp: 4, levels: 0 },

@@ -43,6 +43,7 @@ describe("航行轨", () => {
     it("主行动做过了；事件：付费用、拿奖励", () => {
         expect(state.turn!.mainActionDone).toBe(true);
         expect(events).toEqual([
+            { type: "track", seat: swamp, track: "sailing", from: 0, to: 1 },
             { type: "resources", seat: swamp, delta: { coins: -4, scholars: -1 }, reason: "advanceTrack" },
             { type: "resources", seat: swamp, delta: { vp: 2 }, reason: "trackReward" },
         ]);

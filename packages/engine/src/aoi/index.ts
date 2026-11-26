@@ -28,3 +28,5 @@ export * from "./powerActions.js";
 export * from "./bookActions.js";
 export * from "./specialActions.js";
 export * from "./pass.js";
+export * from "./roundScore.js";
+export * from "./round.js";
