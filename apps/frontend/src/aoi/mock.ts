@@ -124,7 +124,7 @@ export const MOCK_STATE: GameState = {
         },
         level12: { banking: null, law: null, engineering: null, medicine: null },
         roundScores: ["workshopLaw", "guildMedicine", "levelMedicine", "spadeEngineering", "schoolBanking", "bigBanking"],
-        finalRoundScore: "frs-1",
+        finalRoundScore: "guild",
         bonusTiles: [
             { id: "power4coins2", coins: 1 },
             { id: "coins6", coins: 2 },

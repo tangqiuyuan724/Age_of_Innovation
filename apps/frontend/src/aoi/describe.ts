@@ -5,7 +5,7 @@ import {
     type BonusTileId, type BookColor, type Decision, type DraftItem, type GameEvent, type HexId, type Move, type ResourceBundle, type Seat,
 } from "@aoi/engine/aoi";
 import {
-    BONUS_TILE_LABEL, BOOK_ACTION_LABEL, BOOK_NAME, COMPETENCY_LABEL, CONVERSION_LABEL, DISCIPLINE_NAME,
+    BONUS_TILE_LABEL, BOOK_ACTION_LABEL, BOOK_NAME, CITY_TILE_LABEL, COMPETENCY_LABEL, CONVERSION_LABEL, DISCIPLINE_NAME,
     DRAFT_CATEGORY_NAME, PHASE_NAME, POWER_ACTION_LABEL, STRUCTURE_NAME, TERRAIN_NAME, factionName,
 } from "./labels.ts";
 
@@ -58,6 +58,10 @@ const REASON: Record<string, string> = {
     bookAction: "书本行动",
     pass: "pass 奖励",
     bonusTile: "回合奖励板块上的金币",
+    bonusTileAction: "回合奖励板块",
+    roundScore: "回合计分板块",
+    scienceBonus: "轮末学科奖励",
+    cityTile: "城市板块",
 };
 
 /** 特殊行动的来源 "bonus:板块编号" 写成人看的名字；以后别的来源（M3）在这里加 */
@@ -135,7 +139,7 @@ export function describeMove(m: Move, n: Namer): string {
                 case "bookColor": return `选书：${describeBundle({ books: c.books })}`;
                 case "competency": return `拿能力板块「${COMPETENCY_LABEL[c.tile].short}」`;
                 case "palaceTile": return `拿宫殿板块 #${c.tile}`;
-                case "cityTile": return `拿城市板块 ${c.tile}`;
+                case "cityTile": return `拿城市板块「${CITY_TILE_LABEL[c.tile] ?? c.tile}」`;
             }
         }
     }
@@ -161,13 +165,20 @@ export function describeEvent(e: GameEvent, n: Namer): string {
                 : `${n.name(e.seat)}没要这 ${e.power} 能量`;
         case "science": return `${n.name(e.seat)}的${DISCIPLINE_NAME[e.discipline]}：${e.from} → ${e.to} 级`;
         case "cityFounded": return `${n.name(e.seat)}组成了城市（${e.hexes.length} 个格子）`;
+        case "track": return `${n.name(e.seat)}的${e.track === "sailing" ? "航行" : "改造"}轨：${e.from} → ${e.to} 级`;
+        case "scholarSent":
+            return e.space === "return"
+                ? `${n.name(e.seat)}的学者退回供应区（${DISCIPLINE_NAME[e.discipline]}）`
+                : `${n.name(e.seat)}派学者到${DISCIPLINE_NAME[e.discipline]}第 ${e.space + 1} 格`;
         case "tileTaken": {
             const tile = e.kind === "competency" && e.tile in COMPETENCY_LABEL
                 ? `「${COMPETENCY_LABEL[e.tile as keyof typeof COMPETENCY_LABEL].short}」`
                 : e.kind === "bonus" && e.tile in BONUS_TILE_LABEL
                     ? `「${BONUS_TILE_LABEL[e.tile as BonusTileId].short}」`
-                    : e.tile;
-            return `${n.name(e.seat)}拿了${TILE_KIND[e.kind]} ${tile}`;
+                    : e.kind === "city" && e.tile in CITY_TILE_LABEL
+                        ? `「${CITY_TILE_LABEL[e.tile]}」`
+                        : e.tile;
+            return `${n.name(e.seat)}拿了${TILE_KIND[e.kind]}${tile.startsWith("「") ? "" : " "}${tile}`;
         }
         case "passed": return `${n.name(e.seat)}结束本轮`;
         case "gameEnded": return "游戏结束";
