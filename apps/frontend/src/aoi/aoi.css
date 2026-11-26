@@ -279,14 +279,41 @@ body:has(.aoi-root) {
 .palace > button { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 4px; }
 .palace-can > button { box-shadow: 0 0 0 2.5px var(--pick), 0 0 12px var(--pick-glow); }
 
-/* ---------- 最右：玩家卡片和日志。跟着页面往下滚的时候一直停在屏幕上 ---------- */
+/* ---------- 最右：玩家 / 日志两个页签，像文件夹的标签。跟着页面往下滚的时候一直停在屏幕上 ---------- */
 .table-feed {
     grid-area: feed; align-self: start;
     position: sticky; top: calc(var(--prompt-h) + 12px);
-    max-height: calc(100vh - var(--prompt-h) - 24px);
-    display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    height: calc(100vh - var(--prompt-h) - 24px);
+    display: flex; flex-direction: column; min-width: 0;
 }
-.players { display: grid; gap: 8px; flex: none; }
+.feed-tabs { flex: none; display: flex; gap: 4px; padding-left: 8px; border-bottom: 1px solid var(--bronze); }
+.feed-tab {
+    position: relative; bottom: -1px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 18px 4px;
+    font: 600 15px/1.4 var(--serif);
+    color: var(--on-table-soft);
+    background: linear-gradient(#F6EEDC, #E7D8B8);
+    border: 1px solid rgba(140,106,60,.5);
+    border-bottom-color: var(--bronze);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+}
+.feed-tab:hover { color: var(--on-table); }
+/* 选中的页签和下面的白色桌面连在一起：底边换成白色，盖住那条线 */
+.feed-tab-on { color: var(--on-table); background: #FFFFFF; border-color: var(--bronze); border-bottom-color: #FFFFFF; }
+.feed-tab-new { padding: 0 6px; border-radius: 9px; font: 700 11px/16px var(--sans); color: #3D2A06; background: var(--gold-bright); }
+/* 每一页占满剩下的高度；玩家多了在页里面滚。左右留一点边，免得卡片的金色光晕被切掉 */
+.feed-panel { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 6px 6px; }
+.feed-panel[hidden] { display: none; }
+.feed-panel-log { display: flex; flex-direction: column; overflow: hidden; }
+.feed-panel-log .log {
+    flex: 1; min-height: 0; overflow: auto;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--ink); background: rgba(241,231,207,.94);
+    border: 1px solid rgba(140,106,60,.7);
+}
+.players { display: grid; gap: 8px; }
 .pcard {
     width: 100%; display: grid; gap: 4px; padding: 7px 9px 7px 12px; text-align: left;
     color: var(--ink);
@@ -323,20 +350,12 @@ body:has(.aoi-root) {
 .pcard-cities { display: inline-flex; gap: 2px; }
 .pcard-cities .art { width: 22px; }
 
-.feed-log { min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.feed-log .log {
-    flex: 1; min-height: 120px; overflow: auto;
-    padding: 8px 10px; border-radius: 8px;
-    color: var(--ink); background: rgba(241,231,207,.94);
-    border: 1px solid rgba(140,106,60,.7);
-}
 .log { display: grid; align-content: start; gap: 8px; }
 .log > li { padding-left: 8px; border-left: 3px solid var(--seat-color); font-size: 12px; }
 .log p { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .log-step { min-width: 1.6em; color: var(--ink-soft); font-weight: 400 !important; }
 .log ul { margin-top: 2px; color: var(--ink-soft); }
 .log ul li::before { content: "– "; }
-.feed-log > .muted { color: var(--on-table-soft); }
 
 /* ---------- 地图下面：玩家板（就是规划板，棋子摆在图上） ---------- */
 .table-boards { grid-area: boards; min-width: 0; }
@@ -435,7 +454,48 @@ body:has(.aoi-root) {
 .free-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .free-panel input { width: 4.2em; }
 
-/* 屏幕再窄一点（比如 1280 的笔记本）：玩家和日志挪到地图下面，和玩家板并排 */
+/* 随机走的小面板，也挂在按钮下面 */
+.autoplay { position: relative; }
+.autoplay-panel { position: absolute; z-index: 35; top: calc(100% + 8px); right: 0; width: max-content; }
+.autoplay-panel .btn { justify-content: flex-start; }
+.autoplay-running { color: var(--ink); border-color: var(--pick); box-shadow: 0 0 0 2px var(--pick-glow); }
+
+/* ---------- 终局计分：一张羊皮纸计分表，盖在桌面上 ---------- */
+.finalsheet {
+    width: min(880px, calc(100vw - 48px));
+    max-height: calc(100vh - 48px);
+    padding: 0;
+    color: var(--ink);
+    background: linear-gradient(170deg, var(--parchment), var(--parchment-deep));
+    border: 1px solid var(--bronze);
+    border-radius: 12px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+}
+.finalsheet::backdrop { background: rgba(43,33,22,.38); }
+.finalsheet-head { padding: 22px 28px 14px; border-bottom: 1px solid rgba(140,106,60,.45); }
+.finalsheet-head h2 { margin: 0; font: 700 28px/1.2 var(--serif); }
+.finalsheet-winner { margin-top: 4px; font: 17px/1.4 var(--serif); }
+.finalsheet-table { width: 100%; border-collapse: collapse; }
+.finalsheet-table th, .finalsheet-table td { padding: 10px 14px; text-align: right; vertical-align: middle; }
+.finalsheet-table thead th { padding-top: 12px; padding-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); border-bottom: 1px solid rgba(140,106,60,.45); }
+.finalsheet-table tbody tr { border-bottom: 1px solid rgba(140,106,60,.25); }
+.finalsheet-table tbody tr > :first-child { border-left: 6px solid var(--seat); }
+.finalsheet-table .finalsheet-rank { width: 4.5em; text-align: center; }
+.finalsheet-table .finalsheet-who { text-align: left; }
+.finalsheet-top { background: linear-gradient(90deg, rgba(217,176,85,.42), rgba(217,176,85,0) 75%); }
+td.finalsheet-rank { font: 700 22px var(--serif); }
+.finalsheet-player { display: flex; align-items: center; gap: 10px; }
+.finalsheet-player b { display: block; font: 700 16px/1.2 var(--serif); }
+.finalsheet-player small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-soft); }
+.finalsheet-pts { display: grid; justify-items: end; gap: 1px; }
+.finalsheet-pts b { font: 700 18px/1.2 var(--serif); }
+.finalsheet-pts small { max-width: 13em; font-size: 11px; line-height: 1.35; color: var(--ink-soft); }
+.finalsheet-zero b { color: var(--ink-soft); font-weight: 400; }
+td.finalsheet-total { font: 700 30px/1 var(--serif); }
+.finalsheet-foot { display: flex; align-items: flex-end; gap: 24px; padding: 14px 28px 20px; }
+.finalsheet-foot p { flex: 1; max-width: 60em; font-size: 12px; color: var(--ink-soft); }
+
+/* 屏幕再窄一点（比如 1280 的笔记本）：玩家 / 日志挪到玩家板下面，玩家卡片横着排 */
 @media (max-width: 1360px) {
     .table {
         grid-template-columns: var(--track-w) minmax(0, 1fr) var(--side-w);
@@ -445,7 +505,10 @@ body:has(.aoi-root) {
             "boards boards side"
             "feed   feed   side";
     }
-    .table-feed { position: static; max-height: none; display: grid; grid-template-columns: 1fr 1fr; }
+    .table-feed { position: static; height: auto; }
+    .feed-panel, .feed-panel-log { overflow: visible; }
+    .feed-panel-log .log { max-height: 520px; }
+    .players { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

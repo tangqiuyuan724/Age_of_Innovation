@@ -2,8 +2,8 @@ import "./aoi.css";
 import { useState } from "react";
 import { MAPS, type Seat, type SetupMode } from "@aoi/engine/aoi";
 import {
-    clearNotice, hasSavedGame, quitLocalGame, resumeSavedGame, sendLocal, startFromMock, startLocalGame, undoLocal,
-    useLocalGame,
+    clearNotice, hasSavedGame, quitLocalGame, resumeSavedGame, sendLocal, startAuto, startFromMock, startLocalGame, stopAuto,
+    undoLocal, useLocalGame, type AutoGoal,
 } from "./localGame.ts";
 import { actingSeat } from "./options.ts";
 import { Table } from "./Table.tsx";
@@ -14,6 +14,7 @@ export function LocalPlay() {
     const names = useLocalGame((s) => s.names);
     const steps = useLocalGame((s) => s.steps);
     const notice = useLocalGame((s) => s.notice);
+    const auto = useLocalGame((s) => s.auto);
 
     if (state === null) return <StartScreen notice={notice} />;
 
@@ -32,11 +33,54 @@ export function LocalPlay() {
             onCloseNotice={clearNotice}
             tools={
                 <>
-                    <button type="button" className="btn btn-quiet" disabled={steps.length === 0} onClick={undoLocal}>撤销一步</button>
+                    <AutoPlay ended={state.phase === "ended"} />
+                    <button type="button" className="btn btn-quiet" disabled={steps.length === 0 || auto !== null} onClick={undoLocal}>撤销一步</button>
                     <button type="button" className="btn btn-quiet" onClick={quitLocalGame}>结束试玩</button>
                 </>
             }
         />
+    );
+}
+
+const AUTO_GOALS: { goal: AutoGoal; label: string }[] = [
+    { goal: "step", label: "走一步" },
+    { goal: "round", label: "走到下一轮" },
+    { goal: "end", label: "走到游戏结束" },
+];
+
+/**
+ * 随机走：电脑替该操作的人挑一条引擎说能走的指令（getLegalMoves），用来快速走到想看的局面。
+ * 走的每一步和手动走的一样记进日志、能撤销、会存档。正在走的时候按钮变成"停下"
+ */
+function AutoPlay({ ended }: { ended: boolean }) {
+    const auto = useLocalGame((s) => s.auto);
+    const [open, setOpen] = useState(false);
+
+    if (auto !== null) {
+        return (
+            <button type="button" className="btn btn-quiet autoplay-running" onClick={stopAuto}>
+                停下<small className="num">已走 {auto.done} 步</small>
+            </button>
+        );
+    }
+    return (
+        <span className="autoplay">
+            <button
+                type="button" className="btn btn-quiet" disabled={ended} aria-expanded={open}
+                title="电脑替大家随机走，用来快速走到想看的局面" onClick={() => setOpen(!open)}
+            >
+                随机走…
+            </button>
+            {open && (
+                <span className="popover autoplay-panel" role="menu" aria-label="随机走到哪里">
+                    {AUTO_GOALS.map(({ goal, label }) => (
+                        <button key={goal} type="button" role="menuitem" className="btn" onClick={() => { setOpen(false); startAuto(goal); }}>
+                            {label}
+                        </button>
+                    ))}
+                </span>
+            )}
+        </span>
     );
 }
 

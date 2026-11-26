@@ -2,7 +2,7 @@
 // 派系、地形的中文名照中文版配件；学科的中文名还是暂定译名。
 import type {
     BonusTileId, BookActionId, BookColor, BuildingType, CityTileId, CompetencyId, ConversionId, Discipline, DraftCategory,
-    FactionId, Phase, PowerActionId, RuleError, StructureType, Terrain,
+    FactionId, FinalRoundScoreId, Phase, PowerActionId, RuleError, StructureType, Terrain,
 } from "@aoi/engine/aoi";
 
 export const TERRAIN_NAME: Record<Terrain, string> = {
@@ -171,8 +171,8 @@ export const ROUND_SCORE_LABEL: Record<string, { action: string; science: string
     innovationLaw: { action: "每拿 1 个创新板块 +5 分", science: "法律每 2 级：3 能量" },
 };
 
-/** 终局回合计分板块（M1-8 定正式编号；现在的 frs-1 这种临时编号查不到，就不显示） */
-export const FINAL_ROUND_LABEL: Record<string, string> = {
+/** 终局回合计分板块：盖在第 6 轮板块的右半边，第 6 轮时和那一轮的回合计分板块一起算分 */
+export const FINAL_ROUND_LABEL: Record<FinalRoundScoreId, string> = {
     guild: "最后一轮：每建 1 个行会 +3 分",
     borderWorkshop: "最后一轮：在版图边缘每建 1 个工坊 +3 分",
     school: "最后一轮：每建 1 个学校 +4 分",

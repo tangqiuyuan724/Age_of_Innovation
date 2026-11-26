@@ -45,11 +45,9 @@ export function RoundTrack({ state }: { state: GameState }) {
                         </div>
                     );
                 })}
-                {FINAL_ROUND_LABEL[finalId] && (
-                    <div className="roundtile roundtile-final" style={slotStyle(6, true)}>
-                        <Art kind="finalRound" id={finalId} alt={FINAL_ROUND_LABEL[finalId]} />
-                    </div>
-                )}
+                <div className="roundtile roundtile-final" style={slotStyle(6, true)}>
+                    <Art kind="finalRound" id={finalId} alt={FINAL_ROUND_LABEL[finalId]} />
+                </div>
             </div>
         </aside>
     );

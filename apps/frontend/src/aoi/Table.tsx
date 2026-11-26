@@ -5,6 +5,8 @@ import { ActionRow } from "./ActionRow.tsx";
 import { useMissingAssets } from "./assets.ts";
 import type { Namer } from "./describe.ts";
 import { DisplayBoard } from "./DisplayBoard.tsx";
+import { FeedTabs } from "./FeedTabs.tsx";
+import { FinalScoreSheet } from "./FinalScoreSheet.tsx";
 import { GameLog, type LogEntry } from "./GameLog.tsx";
 import { HexPanel } from "./HexPanel.tsx";
 import { MapBoard } from "./MapBoard.tsx";
@@ -39,8 +41,9 @@ interface Props {
 /**
  * 整张桌面，照实物摆：
  *   上：提示条（轮到谁、做什么）
- *   左：回合轨　中：地图和行动格　右：学科板、能力板块、回合奖励板块、城市和宫殿板块　最右：玩家和日志
+ *   左：回合轨　中：地图和行动格　右：学科板、能力板块、回合奖励板块、城市和宫殿板块　最右：玩家 / 日志两个页签
  *   地图下面：正在查看的那位玩家的玩家板（开局时是选组合 / 轮抽）
+ *   游戏结束时：终局计分表盖在最上面
  * 预览页和本地试玩共用这一个组件，区别只在有没有 send。M2 接上服务器后，send 换成"发给服务器"
  */
 export function Table({ state, name, me, send, log, notice, onCloseNotice, tools }: Props) {
@@ -54,6 +57,9 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
     const [selected, setSelected] = useState<HexId | null>(null);
     // pass 的时候先进入"选回合奖励板块"
     const [passing, setPassing] = useState(false);
+    // 游戏结束时盖在桌面上的计分表。收起以后，点提示条上的"看终局计分"再打开
+    const ended = state.phase === "ended" && state.finalScores !== null;
+    const [showFinal, setShowFinal] = useState(true);
 
     // 换人操作了（本地试玩时轮到下一个人），就切到这个人的玩家板
     useEffect(() => {
@@ -65,6 +71,10 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
         setSelected(null);
         setPassing(false);
     }, [state.version]);
+    // 刚结束（或者撤销回去再走到结束）时自动打开计分表
+    useEffect(() => {
+        if (ended) setShowFinal(true);
+    }, [ended]);
 
     const actor = send ? me : null;
     const d = state.pending[0];
@@ -84,7 +94,10 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
             <PromptBar
                 state={state} actor={actor} name={name} hexName={namer.hex} send={send}
                 passing={passing && canAct} onPassing={setPassing} tools={tools}
+                onShowFinal={ended ? () => setShowFinal(true) : undefined}
             />
+
+            {ended && showFinal && <FinalScoreSheet state={state} name={name} onClose={() => setShowFinal(false)} />}
 
             {(notice || missing.length > 0) && (
                 <div className="toasts">
@@ -151,13 +164,11 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
             </aside>
 
             <aside className="table-feed" aria-label="玩家和日志">
-                <PlayerList state={state} name={name} me={me} meLabel={send ? "操作中" : "你"} viewed={viewed} onView={setViewed} />
-                {log && (
-                    <section className="feed-log" aria-label="日志">
-                        <h3 className="supply-title">日志</h3>
-                        <GameLog entries={log} state={state} namer={namer} />
-                    </section>
-                )}
+                <FeedTabs
+                    players={<PlayerList state={state} name={name} me={me} meLabel={send ? "操作中" : "你"} viewed={viewed} onView={setViewed} />}
+                    log={log ? <GameLog entries={log} state={state} namer={namer} /> : null}
+                    logCount={log?.length ?? 0}
+                />
             </aside>
 
             <section className="table-boards">

@@ -5,6 +5,7 @@ import {
 } from "@aoi/engine/aoi";
 import { BookStepper } from "./ActionRow.tsx";
 import { describeBundle, describeDecision } from "./describe.ts";
+import { winnerText } from "./FinalScoreSheet.tsx";
 import { CONVERSION_LABEL, DISCIPLINE_NAME, reasonText } from "./labels.ts";
 import { passChoices, specialActionChoices } from "./options.ts";
 
@@ -20,20 +21,27 @@ interface Props {
     onPassing: (on: boolean) => void;
     /** 右边的按钮（撤销、结束试玩……） */
     tools?: ReactNode;
+    /** 游戏结束后重新打开终局计分表 */
+    onShowFinal?: () => void;
 }
 
 /**
  * 顶上的提示条：现在轮到谁、要做什么。轮到操作的人时变成金色，能点的按钮都在这一条上；
  * 地图格子、行动格、学者格、板块直接在桌面上点
  */
-export function PromptBar({ state, actor, name, hexName, send, passing, onPassing, tools }: Props) {
+export function PromptBar({ state, actor, name, hexName, send, passing, onPassing, tools, onShowFinal }: Props) {
     const d = state.pending[0];
     const turn = state.turn;
     const mine = send !== undefined && actor !== null && (d !== undefined ? d.seat === actor : turn?.seat === actor);
 
     let body: ReactNode;
     if (state.phase === "ended") {
-        body = <p className="prompt-text">游戏结束</p>;
+        body = (
+            <>
+                <p className="prompt-text">游戏结束{state.finalScores && <>：<strong>{winnerText(state.finalScores, name)}</strong></>}</p>
+                {onShowFinal && <span className="prompt-buttons"><button type="button" className="btn" onClick={onShowFinal}>看终局计分</button></span>}
+            </>
+        );
     } else if (d !== undefined) {
         const waiting = state.pending.length - 1;
         body = (
@@ -106,7 +114,7 @@ function MyTurn({ state, me, name, send, passing, onPassing }: {
                     <MoveButton key={c.label} state={state} me={me} send={send} move={c.move} label="特殊行动" hint={c.label} />
                 ))}
                 {pass ? (
-                    <button type="button" className="btn" disabled={pass.error !== null} title={pass.error === null ? "最后一轮，不拿板块" : reasonText(pass.error)} onClick={() => send(pass.move)}>pass</button>
+                    <button type="button" className="btn" disabled={pass.error !== null} title={pass.error === null ? "最后一轮，不拿板块。pass 时碗 II 里的能量自动全部牺牲（每 2 个：1 个移出游戏、1 个进碗 III），碗 III 的能量终局算资源" : reasonText(pass.error)} onClick={() => send(pass.move)}>pass</button>
                 ) : (
                     <button type="button" className="btn" title="这一轮不再行动：在右边选一块回合奖励板块" onClick={() => onPassing(true)}>pass…</button>
                 )}

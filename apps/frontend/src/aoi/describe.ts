@@ -62,6 +62,10 @@ const REASON: Record<string, string> = {
     roundScore: "回合计分板块",
     scienceBonus: "轮末学科奖励",
     cityTile: "城市板块",
+    finalRoundScore: "终局回合计分板块",
+    finalArea: "终局计分：最大区域",
+    finalScience: "终局计分：学科",
+    finalResources: "终局计分：剩余资源",
 };
 
 /** 特殊行动的来源 "bonus:板块编号" 写成人看的名字；以后别的来源（M3）在这里加 */
@@ -124,7 +128,7 @@ export function describeMove(m: Move, n: Namer): string {
             return `书本行动：${BOOK_ACTION_LABEL[m.id]}${guild}，付 ${describeBundle({ books: m.books })}`;
         }
         case "specialAction": return `特殊行动：${specialSourceName(m.source)}`;
-        case "pass": return m.bonusTile ? `pass，拿回合奖励板块「${BONUS_TILE_LABEL[m.bonusTile].short}」` : "pass（最后一轮）";
+        case "pass": return m.bonusTile ? `pass，拿回合奖励板块「${BONUS_TILE_LABEL[m.bonusTile].short}」` : "pass（最后一轮，碗 II 的能量自动牺牲）";
         case "endTurn": return "结束回合";
         case "decide": {
             const c = m.choice;
@@ -181,6 +185,10 @@ export function describeEvent(e: GameEvent, n: Namer): string {
             return `${n.name(e.seat)}拿了${TILE_KIND[e.kind]}${tile.startsWith("「") ? "" : " "}${tile}`;
         }
         case "passed": return `${n.name(e.seat)}结束本轮`;
-        case "gameEnded": return "游戏结束";
+        case "gameEnded": {
+            const top = Math.max(...e.scores.map((s) => s.total));
+            const winners = e.scores.filter((s) => s.total === top).map((s) => n.name(s.seat));
+            return `游戏结束：${winners.join("、")}${winners.length > 1 ? "并列第一" : "获胜"}（${top} 分）`;
+        }
     }
 }
