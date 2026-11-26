@@ -1,11 +1,17 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
     BOOK_ACTION_COST, DISCIPLINES, POWER_ACTION_COST, validateMove,
     type BookActionId, type Discipline, type GameState, type HexId, type Move, type Seat,
 } from "@aoi/engine/aoi";
 import { BOOK_ACTION_LABEL, BOOK_NAME, POWER_ACTION_LABEL, reasonText } from "./labels.ts";
 import { POWER_ACTIONS, autoBooks, bookActionChoices, powerActionChoices, type Choice } from "./options.ts";
+import { boardBox } from "./mapView.ts";
 import { Art } from "./pieces.tsx";
+
+/** 底图最下面一排行动格的位置（底图像素）：左边 3 个书本行动、右边 6 个能量行动，每格 148 × 83 */
+const SLOT_Y = 883, SLOT_W = 148, SLOT_H = 83;
+const BOOK_SLOT_X = [10, 176, 343];
+const POWER_SLOT_X = [551, 719, 887, 1055, 1223, 1391];
 
 interface Props {
     state: GameState;
@@ -16,7 +22,9 @@ interface Props {
 }
 
 /**
- * 地图下面的一排行动格：3 个书本行动、6 个能量行动，和桌上摆的一样。
+ * 行动格：叠在底图最下面那一排上。
+ *  - 书本行动每局翻开的不一样，摆上这一局的 3 个（盖住图上原来的）
+ *  - 能量行动 6 个是固定的，用图上画好的，只在上面放按钮
  * 本轮用过的盖一个 X 标记。轮到你时，能做的格子会亮起来：能量行动点了直接做，书本行动点了先选付哪几本书
  */
 export function ActionRow({ state, actor, hexName, send }: Props) {
@@ -32,6 +40,7 @@ export function ActionRow({ state, actor, hexName, send }: Props) {
                 {board.bookActions.map((id, i) => (
                     <Slot
                         key={id}
+                        box={boardBox(BOOK_SLOT_X[i], SLOT_Y, SLOT_W, SLOT_H)}
                         art={<Art kind="bookAction" id={id} alt={`${BOOK_ACTION_COST[id]} 本书：${BOOK_ACTION_LABEL[id]}`} />}
                         used={board.bookActionsUsed.includes(id)}
                         choice={bookChoices[i]}
@@ -45,7 +54,8 @@ export function ActionRow({ state, actor, hexName, send }: Props) {
                 {POWER_ACTIONS.map((id, i) => (
                     <Slot
                         key={id}
-                        art={<Art kind="powerAction" id={id} alt={`花 ${POWER_ACTION_COST[id]} 能量：${POWER_ACTION_LABEL[id]}`} />}
+                        box={boardBox(POWER_SLOT_X[i], SLOT_Y, SLOT_W, SLOT_H)}
+                        label={`花 ${POWER_ACTION_COST[id]} 能量：${POWER_ACTION_LABEL[id]}`}
                         used={board.powerActionsUsed.includes(id)}
                         choice={powerChoices[i]}
                         hint={`花 ${POWER_ACTION_COST[id]} 能量：${POWER_ACTION_LABEL[id]}`}
@@ -61,7 +71,12 @@ export function ActionRow({ state, actor, hexName, send }: Props) {
 }
 
 interface SlotProps {
-    art: ReactNode;
+    /** 在底图上的位置 */
+    box: CSSProperties;
+    /** 盖在图上的板块（书本行动）；能量行动用图上画好的，不传 */
+    art?: ReactNode;
+    /** 没有 art 时，给读屏软件的说明 */
+    label?: string;
     used: boolean;
     /** 引擎对这个行动的判断；不能操作时没有 */
     choice: Choice | undefined;
@@ -70,15 +85,15 @@ interface SlotProps {
     onClick: () => void;
 }
 
-function Slot({ art, used, choice, picked = false, hint, onClick }: SlotProps) {
+function Slot({ box, art, label, used, choice, picked = false, hint, onClick }: SlotProps) {
     const marker = used && <Art kind="marker" id="x" alt="本轮已用" className="slot-x" />;
     if (choice === undefined) {
-        return <li className="slot">{art}{marker}</li>;
+        return <li className="slot" style={box} title={hint} aria-label={label}>{art}{marker}</li>;
     }
     const ok = choice.error === null;
     return (
-        <li className={"slot" + (ok ? " slot-ready" : "") + (picked ? " slot-picked" : "")}>
-            <button type="button" disabled={!ok} title={ok ? hint : reasonText(choice.error!)} onClick={onClick}>
+        <li className={"slot" + (ok ? " slot-ready" : "") + (picked ? " slot-picked" : "")} style={box}>
+            <button type="button" disabled={!ok} title={ok ? hint : reasonText(choice.error!)} aria-label={label} onClick={onClick}>
                 {art}{marker}
             </button>
         </li>

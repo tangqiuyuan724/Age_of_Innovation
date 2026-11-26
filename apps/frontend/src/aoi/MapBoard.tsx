@@ -2,7 +2,8 @@ import type { GameState, HexId, MapGeometry, Seat } from "@aoi/engine/aoi";
 import { TERRAIN_COLOR } from "./colors.ts";
 import { assetUrl, reportMissing } from "./assets.ts";
 import { STRUCTURE_NAME, TERRAIN_NAME } from "./labels.ts";
-import { FRAME, HEX_R, HEX_W, boardLabels, hexCenter, hexPoints, mapSize, outlinePath, type ReachableHex } from "./mapView.ts";
+import "./boards.css";
+import { BOARD, HEX_R, HEX_W, LABEL_DY, boardLabels, hexCenter, hexPoints, outlinePath, type ReachableHex } from "./mapView.ts";
 import { Piece } from "./pieces.tsx";
 
 /** 地形图是 214 × 248 像素，宽对齐格子宽度，高按比例 */
@@ -22,12 +23,10 @@ interface Props {
 }
 
 /**
- * 地图：书本样子的边框里，每个陆地格贴上对应地形的图，河流是水面。
- * 上面再摆建筑、桥、城市轮廓，以及"能到哪里""现在能点哪里"的提示框。
- * 边框图（图 147）本来就是为这张 9 行 × 13 列的地图画的，FRAME 记的是它在 SVG 坐标里的位置
+ * 地图：底图是一整张地图贴图（地形、河流、格子编号都画在上面），BOARD 记的是它在 SVG 坐标里的位置。
+ * 改造过的格子盖上新地形的图；上面再摆建筑、桥、城市轮廓，以及"能到哪里""现在能点哪里"的提示框
  */
 export function MapBoard({ geo, state, name, reach, targets, selected, onHexClick }: Props) {
-    const { width, height } = mapSize(geo);
     const labels = boardLabels(geo);
     const reachById = new Map(reach.map((r) => [r.id, r.spades]));
     const land = geo.hexes.filter((h) => !h.river);
@@ -36,37 +35,26 @@ export function MapBoard({ geo, state, name, reach, targets, selected, onHexClic
     return (
         <svg
             className="mapboard"
-            viewBox={`${FRAME.x} ${FRAME.y} ${FRAME.w} ${FRAME.h}`}
+            viewBox={`${BOARD.x} ${BOARD.y} ${BOARD.w} ${BOARD.h}`}
             role="group"
             aria-label={`${geo.name}，${land.length} 个陆地格。点格子看详情`}
         >
-            <defs>
-                {/* 水面：深蓝底色上叠一层拉长的噪点，像有水纹 */}
-                <filter id="water-ripple" x="0" y="0" width="100%" height="100%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.006 0.045" numOctaves="2" seed="7" />
-                    <feColorMatrix values="0 0 0 0 0.86  0 0 0 0 0.93  0 0 0 0 1  0 0 0 0.5 -0.12" />
-                    <feComposite in2="SourceGraphic" operator="in" />
-                </filter>
-                <linearGradient id="water-depth" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#3F7096" />
-                    <stop offset="1" stopColor="#2C5677" />
-                </linearGradient>
-            </defs>
+            {/* 第 1 层：底图。开局时的地形、河流、格子编号都在图上 */}
+            <image
+                href={assetUrl("board", "map")} x={BOARD.x} y={BOARD.y} width={BOARD.w} height={BOARD.h}
+                preserveAspectRatio="none" onError={() => reportMissing(assetUrl("board", "map"))}
+            />
 
-            {/* 第 1 层：水面，铺满整张地图（陆地格盖在上面，没盖到的就是河） */}
-            <rect x={0} y={0} width={width} height={height} fill="url(#water-depth)" />
-            <rect x={0} y={0} width={width} height={height} fill="#fff" filter="url(#water-ripple)" opacity={0.7} />
-
-            {/* 第 2 层：陆地。先垫一块深色的六边形当作格子之间的缝，再贴地形图。
-                地形以 state.hexes 为准：改造过的格子会换成新地形的图 */}
+            {/* 第 2 层：陆地格。改造过的格子盖上新地形的图（图上印的编号被盖住了，自己再写一遍）；
+                每格再放一个看不见的六边形，用来点、用来显示鼠标停在哪一格 */}
             <g>
                 {land.map((h) => {
                     const c = hexCenter(h.row, h.col);
                     const hs = state.hexes[h.id];
                     const terrain = hs ? hs.terrain : h.terrain!;
+                    const changed = terrain !== h.terrain;
                     const owner = hs?.structure ? `，${name(hs.structure.owner)}的${STRUCTURE_NAME[hs.structure.type]}` : "";
-                    const changed = terrain !== h.terrain ? `（原来是${TERRAIN_NAME[h.terrain!]}）` : "";
-                    const title = `${labels[h.id]}：${TERRAIN_NAME[terrain]}${changed}${owner}`;
+                    const title = `${labels[h.id]}：${TERRAIN_NAME[terrain]}${changed ? `（原来是${TERRAIN_NAME[h.terrain!]}）` : ""}${owner}`;
                     const url = assetUrl("terrain", terrain);
                     return (
                         <g
@@ -82,12 +70,16 @@ export function MapBoard({ geo, state, name, reach, targets, selected, onHexClic
                             }}
                         >
                             <title>{`${title}。引擎编号 ${h.id}`}</title>
-                            <polygon points={hexPoints(c.x, c.y, HEX_R + 0.4)} fill="#2B2720" />
-                            <image
-                                href={url} x={c.x - HEX_W / 2} y={c.y - TILE_H / 2} width={HEX_W} height={TILE_H}
-                                preserveAspectRatio="none" onError={() => reportMissing(url)}
-                            />
-                            <text className="hex-label" x={c.x} y={c.y + HEX_R * 0.72}>{labels[h.id]}</text>
+                            {changed && (
+                                <>
+                                    <image
+                                        href={url} x={c.x - HEX_W / 2} y={c.y - TILE_H / 2} width={HEX_W} height={TILE_H}
+                                        preserveAspectRatio="none" onError={() => reportMissing(url)}
+                                    />
+                                    <text className="hex-label-board" x={c.x} y={c.y - LABEL_DY}>{labels[h.id]}</text>
+                                </>
+                            )}
+                            <polygon className="hex-hit" points={hexPoints(c.x, c.y, HEX_R)} />
                         </g>
                     );
                 })}
@@ -115,7 +107,7 @@ export function MapBoard({ geo, state, name, reach, targets, selected, onHexClic
                     return (
                         <g key={h.id} data-hex={h.id}>
                             <polygon points={hexPoints(c.x, c.y, HEX_R * 0.84)} />
-                            <text x={c.x} y={c.y - HEX_R * 0.42}>{spades === 0 ? "可建" : `${spades} 铲`}</text>
+                            <text x={c.x} y={c.y + HEX_R * 0.12}>{spades === 0 ? "可建" : `${spades} 铲`}</text>
                         </g>
                     );
                 })}
@@ -175,11 +167,6 @@ export function MapBoard({ geo, state, name, reach, targets, selected, onHexClic
                 })()}
             </g>
 
-            {/* 最上面：书本边框。中间是透明的，边缘正好压住最外圈格子的一点点 */}
-            <image
-                href={assetUrl("board", "frame")} x={FRAME.x} y={FRAME.y} width={FRAME.w} height={FRAME.h}
-                preserveAspectRatio="none" pointerEvents="none" onError={() => reportMissing(assetUrl("board", "frame"))}
-            />
         </svg>
     );
 }

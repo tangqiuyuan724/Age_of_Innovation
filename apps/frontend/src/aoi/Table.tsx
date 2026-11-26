@@ -41,7 +41,7 @@ interface Props {
 /**
  * 整张桌面，照实物摆：
  *   上：提示条（轮到谁、做什么）
- *   左：回合轨　中：地图和行动格　右：学科板、能力板块、回合奖励板块、城市和宫殿板块　最右：玩家 / 日志两个页签
+ *   左：地图（回合轨、书本行动、能量行动都画在地图贴图上）　右：学科板、能力板块、回合奖励板块、城市和宫殿板块　最右：玩家 / 日志两个页签
  *   地图下面：正在查看的那位玩家的玩家板（开局时是选组合 / 轮抽）
  *   游戏结束时：终局计分表盖在最上面
  * 预览页和本地试玩共用这一个组件，区别只在有没有 send。M2 接上服务器后，send 换成"发给服务器"
@@ -116,8 +116,6 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
                 </div>
             )}
 
-            <RoundTrack state={state} />
-
             <main className="table-map">
                 <div className="map-wrap">
                     <MapBoard
@@ -127,6 +125,9 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
                         selected={selected}
                         onHexClick={(id) => setSelected(id === selected ? null : id)}
                     />
+                    {/* 回合轨和行动格叠在地图贴图对应的位置上 */}
+                    <RoundTrack state={state} />
+                    <ActionRow state={state} actor={canAct && !passing ? actor : null} hexName={namer.hex} send={send} />
                     {selected !== null && (
                         <HexPanel
                             geo={geo} state={state} hex={selected} name={name}
@@ -136,7 +137,6 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
                         />
                     )}
                 </div>
-                <ActionRow state={state} actor={canAct && !passing ? actor : null} hexName={namer.hex} send={send} />
                 {showReach && viewedPlayer && (
                     <p className="map-legend">虚线框：{name(viewed)}能到达的空格和改造要几铲。点任意格子看详情{send ? "、在那里行动" : ""}</p>
                 )}

@@ -27,8 +27,7 @@ body:has(.aoi-root) {
     --power: #6E45A3;
     --serif: "Songti SC", "STSong", "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
     --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", system-ui, sans-serif;
-    /* 各列的宽度跟着屏幕走：1440 宽时大约 101 / 288 / 230，1920 宽时 134 / 380 / 300 */
-    --track-w: clamp(88px, 7vw, 136px);
+    /* 右边两列的宽度跟着屏幕走：1440 宽时大约 288 / 230，1920 宽时 380 / 300；地图占剩下的 */
     --side-w: clamp(272px, 20vw, 380px);
     --feed-w: clamp(224px, 16vw, 300px);
     --prompt-h: 58px;
@@ -78,12 +77,12 @@ body:has(.aoi-root) {
 /* ---------- 桌面的排法 ---------- */
 .table {
     display: grid;
-    grid-template-columns: var(--track-w) minmax(0, 1fr) var(--side-w) var(--feed-w);
+    grid-template-columns: minmax(0, 1fr) var(--side-w) var(--feed-w);
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
-        "prompt prompt prompt prompt"
-        "track  map    side   feed"
-        "boards boards side   feed";
+        "prompt prompt prompt"
+        "map    side   feed"
+        "boards side   feed";
     column-gap: 14px;
     row-gap: 14px;
     padding: 0 14px 28px;
@@ -128,16 +127,18 @@ body:has(.aoi-root) {
 .toast code { margin: 0 4px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,.35); font-size: 12px; }
 .toast button { margin-left: auto; border: 0; background: none; color: inherit; font-size: 18px; cursor: pointer; }
 
-/* ---------- 回合轨 ---------- */
-.roundtrack { grid-area: track; align-self: start; display: grid; gap: 8px; }
-.roundtrack-now { display: grid; text-align: center; line-height: 1.25; color: var(--on-table-soft); font-size: 12px; }
-.roundtrack-round { font-family: var(--serif); font-size: 18px; color: var(--on-table); }
-.roundtrack-board { position: relative; filter: drop-shadow(0 6px 10px rgba(0,0,0,.28)); }
-.roundtile { position: absolute; aspect-ratio: 651 / 351; }
-.roundtile .art { height: 100%; object-fit: contain; }
+/* ---------- 回合轨：叠在地图贴图左边那一条上（位置见 RoundTrack.tsx） ---------- */
+.roundtrack { position: absolute; inset: 0; pointer-events: none; }
+.roundtrack-now {
+    position: absolute; display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: var(--ink); background: rgba(241,231,207,.95); border: 1px solid var(--bronze); border-radius: 6px;
+    font-size: 11px; line-height: 1; white-space: nowrap;
+}
+.roundtrack-round { font-family: var(--serif); font-size: 14px; font-weight: 700; }
+.roundtile { position: absolute; pointer-events: auto; }
+.roundtile .art { width: 100%; height: 100%; object-fit: fill; }
 .roundtile-past { filter: grayscale(.7) brightness(.7); }
 .roundtile-now { outline: 3px solid var(--pick); outline-offset: 1px; border-radius: 6px; box-shadow: 0 0 12px var(--pick-glow); }
-.roundtile-final { aspect-ratio: 332 / 351; }
 
 /* ---------- 地图和行动格 ---------- */
 .table-map { grid-area: map; min-width: 0; display: grid; gap: 10px; align-content: start; }
@@ -162,10 +163,13 @@ body:has(.aoi-root) {
 .targets .selected { fill: none; stroke: #FFFFFF; stroke-width: 3.6; }
 .map-legend { font-size: 12px; color: var(--on-table-soft); }
 
-.actionrow { position: relative; display: grid; grid-template-columns: 3fr 6fr; gap: 12px; }
-.slots { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
-.slot { position: relative; filter: drop-shadow(0 3px 4px rgba(0,0,0,.28)); }
-.slot > button { display: block; width: 100%; padding: 0; border: 0; border-radius: 12px; background: none; cursor: pointer; position: relative; }
+/* 行动格：叠在地图贴图最下面那一排上（位置见 ActionRow.tsx）。弹出的付书表单挂在地图下面 */
+.actionrow { position: absolute; inset: 0; pointer-events: none; }
+.slots { display: contents; }
+.slot { position: absolute; pointer-events: auto; }
+.slot .art { width: 100%; height: 100%; object-fit: contain; }
+.actionrow .bookform { pointer-events: auto; }
+.slot > button { display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 12px; background: none; cursor: pointer; position: relative; }
 .slot > button:disabled { cursor: not-allowed; }
 .slot-ready > button { box-shadow: 0 0 0 2.5px var(--pick), 0 0 12px var(--pick-glow); }
 .slot-ready > button:hover { transform: translateY(-1px); }
@@ -498,12 +502,12 @@ td.finalsheet-total { font: 700 30px/1 var(--serif); }
 /* 屏幕再窄一点（比如 1280 的笔记本）：玩家 / 日志挪到玩家板下面，玩家卡片横着排 */
 @media (max-width: 1360px) {
     .table {
-        grid-template-columns: var(--track-w) minmax(0, 1fr) var(--side-w);
+        grid-template-columns: minmax(0, 1fr) var(--side-w);
         grid-template-areas:
-            "prompt prompt prompt"
-            "track  map    side"
-            "boards boards side"
-            "feed   feed   side";
+            "prompt prompt"
+            "map    side"
+            "boards side"
+            "feed   side";
     }
     .table-feed { position: static; height: auto; }
     .feed-panel, .feed-panel-log { overflow: visible; }

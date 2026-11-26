@@ -1,0 +1,17 @@
+/* 地图和学科板换成贴图以后的样式（MapBoard.tsx、ScienceBoard.tsx 引入）。
+   aoi.css 里学科板的线宽是照原来的扫描图（大 3.5 倍）写的，这里按贴图的像素重新写，覆盖掉 */
+
+/* 地图：每格一个看不见的六边形，鼠标停在上面时亮一点 */
+.hex-hit { fill: transparent; stroke: none; }
+.hex-cell:hover .hex-hit { fill: rgba(255,255,255,.16); }
+.hex-cell:focus-visible .hex-hit { fill: rgba(255,255,255,.2); stroke: #FFFFFF; stroke-width: 2; }
+/* 改造过的格子盖住了图上印的编号，自己再写一遍，样子照着图上的 */
+.hex-label-board {
+    font: 700 11.5px var(--sans); fill: #FFFFFF; text-anchor: middle; dominant-baseline: central;
+    stroke: rgba(20,14,6,.85); stroke-width: 2.6px; paint-order: stroke; pointer-events: none;
+}
+
+/* 学科板 */
+.science-overlay .science-space { stroke-width: 3; }
+.science-overlay .science-space-no { stroke-width: 2; stroke-dasharray: 6 4; }
+.science-overlay .science-pick { stroke-width: 4; }

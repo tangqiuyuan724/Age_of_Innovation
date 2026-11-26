@@ -1,28 +1,27 @@
-import type { CSSProperties } from "react";
 import type { GameState } from "@aoi/engine/aoi";
 import { FINAL_ROUND_LABEL, PHASE_NAME, ROUND_SCORE_LABEL } from "./labels.ts";
+import { boardBox } from "./mapView.ts";
 import { Art } from "./pieces.tsx";
 
 /**
- * 回合板块的格子在回合轨图（416 × 1865 像素）上的位置，单位是百分比。
- * 从上往下是第 6 轮到第 1 轮，每格高 211.5 像素；第 6 轮那格从 y = 586 开始
+ * 回合轨上 6 个格子在底图上的位置（底图像素）：从上往下是第 6 轮到第 1 轮，
+ * 每格 157.5 × 82.5，上下相邻两格隔 93.7。终局回合计分板块盖住第 6 轮那格的右半边（从 x = 92 开始）
  */
-function slotStyle(round: number, half = false): CSSProperties {
-    const top = 586 + (6 - round) * 211.5;
-    return {
-        top: `${(top / 1865) * 100}%`,
-        // 终局板块只盖住右半边
-        left: half ? "50.2%" : "5.6%",
-        width: half ? "44.4%" : "88.8%",
-    };
+function slotBox(round: number, finalHalf = false) {
+    const top = 297.5 + (6 - round) * 93.7;
+    return finalHalf ? boardBox(92, top, 79, 82.5) : boardBox(13.5, top, 157.5, 82.5);
 }
 
-/** 左边一条回合轨：第 1~6 轮的回合计分板块，最上面是终局计分的说明；现在是第几轮就亮哪一格 */
+/**
+ * 回合轨：底图左边那一条。最上面的终局计分说明是图上画好的；
+ * 6 个格子里摆上这一局的回合计分板块（每局随机，盖住图上原来的），现在是第几轮就亮哪一格。
+ * 整个叠在地图上（Table 里放在 .map-wrap 里面）
+ */
 export function RoundTrack({ state }: { state: GameState }) {
     const finalId = state.board.finalRoundScore;
     return (
-        <aside className="roundtrack" aria-label="回合轨">
-            <p className="roundtrack-now">
+        <div className="roundtrack" aria-label="回合轨">
+            <p className="roundtrack-now" style={boardBox(6, 2, 172, 34)}>
                 {state.round === 0 ? (
                     <span className="roundtrack-round">开局</span>
                 ) : (
@@ -32,23 +31,20 @@ export function RoundTrack({ state }: { state: GameState }) {
                     </>
                 )}
             </p>
-            <div className="roundtrack-board">
-                <Art kind="board" id="roundTrack" alt="回合轨：上面是终局计分（区域 18/12/6 分，学科 8/4/2 分，5 金币换 1 分）" />
-                {state.board.roundScores.map((id, i) => {
-                    const round = i + 1;
-                    const label = ROUND_SCORE_LABEL[id];
-                    const text = label ? `第 ${round} 轮：${label.action}；轮末 ${label.science}` : `第 ${round} 轮的回合计分板块（引擎还没有正式数据）`;
-                    const cls = "roundtile" + (round === state.round ? " roundtile-now" : round < state.round ? " roundtile-past" : "");
-                    return (
-                        <div key={round} className={cls} style={slotStyle(round)}>
-                            <Art kind="roundScore" id={label ? id : "back"} alt={text} />
-                        </div>
-                    );
-                })}
-                <div className="roundtile roundtile-final" style={slotStyle(6, true)}>
-                    <Art kind="finalRound" id={finalId} alt={FINAL_ROUND_LABEL[finalId]} />
-                </div>
+            {state.board.roundScores.map((id, i) => {
+                const round = i + 1;
+                const label = ROUND_SCORE_LABEL[id];
+                const text = label ? `第 ${round} 轮：${label.action}；轮末 ${label.science}` : `第 ${round} 轮的回合计分板块`;
+                const cls = "roundtile" + (round === state.round ? " roundtile-now" : round < state.round ? " roundtile-past" : "");
+                return (
+                    <div key={round} className={cls} style={slotBox(round)} title={text}>
+                        <Art kind="roundScore" id={label ? id : "back"} alt={text} />
+                    </div>
+                );
+            })}
+            <div className="roundtile roundtile-final" style={slotBox(6, true)} title={FINAL_ROUND_LABEL[finalId]}>
+                <Art kind="finalRound" id={finalId} alt={FINAL_ROUND_LABEL[finalId]} />
             </div>
-        </aside>
+        </div>
     );
 }

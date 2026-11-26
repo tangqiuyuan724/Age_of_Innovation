@@ -5,19 +5,20 @@ import {
 import { TERRAIN_COLOR } from "./colors.ts";
 import { DISCIPLINE_NAME, reasonText } from "./labels.ts";
 import { scholarChoices } from "./options.ts";
+import "./boards.css";
 import { Art, Disc, Scholar } from "./pieces.tsx";
 
-// 学科板的图是 2155 × 3339 像素。下面的坐标都是在这张图上量出来的（单位：像素），
+// 学科板的贴图是 616 × 968 像素。下面的坐标都是在这张图上量出来的（单位：像素），
 // 叠在图上的 SVG 用同样的坐标系（viewBox），所以图怎么缩放，棋子都摆在对的地方。
-const W = 2155, H = 3339;
-/** 4 条学科轨的中线 x，顺序和 DISCIPLINES 一样：银行、法律、工程、医学 */
-const COLUMN_X = [300, 815, 1335, 1855];
-/** 每一级格子里放标记的位置 y（第 0 级在最下面，第 12 级是顶上的圆章） */
-const LEVEL_Y = [2625, 2422, 2253, 2024, 1844, 1618, 1446, 1202, 997, 842, 688, 534, 231];
-/** 学者格：每门学科 4 格，上排"3 级""2 级"，下排两个"2 级"。相对中线左右各 115 像素 */
-const SPACE_DX = [-115, 115, -115, 115];
-const SPACE_Y = [2870, 2870, 3166, 3166];
-const DISC_R = 54;
+const W = 616, H = 968;
+/** 4 座塔的中线 x，顺序和 DISCIPLINES 一样：银行、法律、工程、医学 */
+const COLUMN_X = [95, 233, 371, 508];
+/** 每一级格子的中间 y（第 0 级在最下面；第 12 级是塔顶的圆章）。8~11 级的格子矮一些 */
+const LEVEL_Y = [749, 694, 644, 581, 531, 467, 417, 352, 292, 249, 206, 162, 75];
+/** 学者格：每门学科 4 格，上排"3 级""2 级"，下排两个"2 级"。相对中线左右各 30 像素 */
+const SPACE_DX = [-30, 30, -30, 30];
+const SPACE_Y = [815, 815, 899, 899];
+const DISC_R = 14.5;
 
 interface Props {
     state: GameState;
@@ -55,7 +56,7 @@ export function ScienceBoard({ state, name, actor, choosingLevels, send }: Props
                             {levelsMove && (
                                 <rect
                                     className={levelsError === null ? "science-pick" : "science-pick science-pick-no"}
-                                    x={cx - 245} y={60} width={490} height={2690} rx={60}
+                                    x={cx - 66} y={15} width={132} height={760} rx={16}
                                     role="button" tabIndex={0}
                                     aria-label={`${DISCIPLINE_NAME[d]}前进`}
                                     onClick={() => levelsError === null && send!(levelsMove)}
@@ -67,14 +68,15 @@ export function ScienceBoard({ state, name, actor, choosingLevels, send }: Props
                             {/* 每一级上的标记：同一级的人挤在一起，一行最多 3 个 */}
                             {LEVEL_Y.map((y, level) => {
                                 const players = here(level);
-                                const x0 = level === 12 ? cx : cx + 40;
+                                // 标记摆在格子里印的数字右边；同一级的人挤在一起
+                                const x0 = level === 12 ? cx : cx + 11;
                                 return players.map((p, k) => {
                                     const row = Math.floor(k / 3), inRow = Math.min(3, players.length - row * 3);
-                                    const x = x0 + ((k % 3) - (inRow - 1) / 2) * 92;
+                                    const x = x0 + ((k % 3) - (inRow - 1) / 2) * 25;
                                     return (
                                         <g key={p.seat}>
                                             <title>{`${name(p.seat)}：${DISCIPLINE_NAME[d]} ${level} 级`}</title>
-                                            <Disc color={color(p.seat)} x={x} y={y - 12 + row * 58} r={DISC_R} />
+                                            <Disc color={color(p.seat)} x={x} y={y - 3 + row * 15.5} r={DISC_R} />
                                         </g>
                                     );
                                 });
@@ -87,7 +89,7 @@ export function ScienceBoard({ state, name, actor, choosingLevels, send }: Props
                                     return (
                                         <g key={k}>
                                             <title>{`${name(seat)}的学者（${DISCIPLINE_NAME[d]}第 ${k + 1} 格）`}</title>
-                                            <Scholar color={color(seat)} x={x} y={y + 60} h={150} />
+                                            <Scholar color={color(seat)} x={x} y={y + 16} h={40} />
                                         </g>
                                     );
                                 }
@@ -97,7 +99,7 @@ export function ScienceBoard({ state, name, actor, choosingLevels, send }: Props
                                     <rect
                                         key={k}
                                         className={c.error === null ? "science-space" : "science-space science-space-no"}
-                                        x={x - 70} y={y - 96} width={140} height={192} rx={16}
+                                        x={x - 21} y={y - 25} width={42} height={50} rx={4}
                                         role="button" tabIndex={0}
                                         aria-label={`派学者到${DISCIPLINE_NAME[d]}第 ${k + 1} 格，前进 ${SCHOLAR_SPACE_LEVELS[k]} 级`}
                                         onClick={() => c.error === null && send!(c.move)}

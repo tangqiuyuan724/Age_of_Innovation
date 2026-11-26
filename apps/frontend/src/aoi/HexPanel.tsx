@@ -4,7 +4,7 @@ import {
 } from "@aoi/engine/aoi";
 import { describeBundle } from "./describe.ts";
 import { reasonText, STRUCTURE_NAME, TERRAIN_NAME } from "./labels.ts";
-import { FRAME, boardLabels, hexCenter } from "./mapView.ts";
+import { BOARD, boardLabels, hexCenter } from "./mapView.ts";
 import { hexChoices, terraformSteps } from "./options.ts";
 import { Art } from "./pieces.tsx";
 
@@ -35,8 +35,8 @@ export function HexPanel({ geo, state, hex, name, viewed, actor, send, onClose }
 
     // 格子中心在地图上的位置（百分比），卡片跟着它走
     const c = hexCenter(info.row, info.col);
-    const left = ((c.x - FRAME.x) / FRAME.w) * 100;
-    const top = ((c.y - FRAME.y) / FRAME.h) * 100;
+    const left = ((c.x - BOARD.x) / BOARD.w) * 100;
+    const top = ((c.y - BOARD.y) / BOARD.h) * 100;
     const onRight = left < 58;
     // 上下方向：格子靠上时卡片往下长，靠下时往上长，免得被页面顶上的提示条或地图底边挡住
     const shiftY = top < 35 ? -12 : top > 65 ? -88 : -50;

@@ -1,5 +1,6 @@
 // 地图的"画法"：格子画在哪、版图上印的编号是什么、某个玩家能到达哪些空格、城市的轮廓。
 // 规则本身（邻接、可达范围）全部调用引擎函数，这里只负责换算成屏幕坐标。
+import type { CSSProperties } from "react";
 import {
     MAPS, hexesInReach, parseMap, reachRange, structuresOf, terrainDistance,
     type GameState, type HexId, type MapGeometry, type Seat,
@@ -28,17 +29,32 @@ export const HEX_W = Math.sqrt(3) * HEX_R;
 const PAD = 8;                        // 地图四周留白
 
 /**
- * 书本边框（图 147，3600 × 2115 像素）在 SVG 坐标里的位置和大小。
- * 边框里的空洞正好是 9 行 × 13 列、每格宽 215 像素的六边形网格：A 行第一格的中心在图上 (454.75, 312.2)。
- * 一个 SVG 单位 = 215 / HEX_W 个像素，由此算出边框左上角在哪
+ * 底图（board/map：地图贴图只裁掉四周不属于版图的一小圈，1552 × 968 像素）在 SVG 坐标里的位置和大小。
+ * 左边的回合轨、下面一排书本行动和能量行动都在图上；我们自己的回合计分板块、书本行动、按钮叠在它们上面（见 boardBox）。
+ * 在图上量的：A1 的中心在 (245.5, 102)，左右相邻两格中心隔 99.9 像素，上下相邻两行隔 83.0 像素。
+ * 图上的六边形比正六边形扁一点（高只有 96%），所以横竖用不同的比例，把图拉到正好对上 SVG 里的正六边形格子
  */
-const FRAME_PX = 215 / HEX_W;
-export const FRAME = {
-    x: PAD + HEX_W / 2 - 454.75 / FRAME_PX,
-    y: PAD + HEX_R - 312.2 / FRAME_PX,
-    w: 3600 / FRAME_PX,
-    h: 2115 / FRAME_PX,
+const BOARD_PX = { w: 1552, h: 968, a1x: 245.5, a1y: 102, col: 99.9, row: 83.0 };
+const BOARD_SX = HEX_W / BOARD_PX.col;
+const BOARD_SY = (1.5 * HEX_R) / BOARD_PX.row;
+export const BOARD = {
+    x: PAD + HEX_W / 2 - BOARD_PX.a1x * BOARD_SX,
+    y: PAD + HEX_R - BOARD_PX.a1y * BOARD_SY,
+    w: BOARD_PX.w * BOARD_SX,
+    h: BOARD_PX.h * BOARD_SY,
 };
+
+/**
+ * 底图上的一块（单位是底图的像素）换成相对整张地图的百分比位置。
+ * 叠在地图上的 HTML（回合计分板块、行动格）用它摆到图上对应的格子里，地图怎么缩放都对得上
+ */
+export function boardBox(x: number, y: number, w: number, h: number): CSSProperties {
+    const pct = (v: number, total: number) => `${(v / total) * 100}%`;
+    return { left: pct(x, BOARD_PX.w), top: pct(y, BOARD_PX.h), width: pct(w, BOARD_PX.w), height: pct(h, BOARD_PX.h) };
+}
+
+/** 格子上印的编号在格子中心往上多少（SVG 单位）：图上是 38 像素 */
+export const LABEL_DY = 38 * BOARD_SY;
 
 /** 格子中心坐标。odd-r 排法：奇数行（B、D、F…）整体右移半格 */
 export function hexCenter(row: number, col: number): { x: number; y: number } {
@@ -62,15 +78,6 @@ export function hexPoints(cx: number, cy: number, r: number): string {
         pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
     }
     return pts.join(" ");
-}
-
-/** 整张地图需要的画布大小 */
-export function mapSize(geo: MapGeometry): { width: number; height: number } {
-    const maxCols = Math.max(...geo.hexes.map((h) => h.col)) + 1;
-    return {
-        width: 2 * PAD + HEX_W * (maxCols + 0.5),
-        height: 2 * PAD + 2 * HEX_R + (geo.rowCount - 1) * 1.5 * HEX_R,
-    };
 }
 
 /**
