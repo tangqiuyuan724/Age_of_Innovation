@@ -104,6 +104,7 @@ function WaitingRoom() {
     const room = useOnline((s) => s.room)!;
     const meta = useOnline((s) => s.meta)!;
     const error = useOnline((s) => s.error);
+    const reconnecting = useOnline((s) => s.reconnecting);
     const [mode, setMode] = useState<"sets" | "draft">("sets");
     const [copied, setCopied] = useState<string | null>(null);
 
@@ -128,6 +129,7 @@ function WaitingRoom() {
                     <button type="button" onClick={() => void copy()}>复制邀请</button>
                 </header>
                 <p className="start-intro">{copied ?? "把房间码发给朋友，他们在首页填上名字和房间码就能进来。"}</p>
+                {reconnecting && <p className="notice" role="status">连接断了，正在重连…</p>}
                 {error && <p className="notice" role="alert">{error}</p>}
 
                 <section aria-label="座位">

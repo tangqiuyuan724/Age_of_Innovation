@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { ColyseusTestServer, boot } from "@colyseus/testing";
 import { getLegalMoves, type GameState, type Move, type Seat } from "@aoi/engine/aoi";
+import { matchMaker } from "colyseus";
 import appConfig from "../src/app.config.js";
-import type { Snapshot, SyncReply } from "../src/rooms/GameRoom.js";
+import { SEAT_TAKEN, type GameRoom, type Snapshot, type SyncReply } from "../src/rooms/GameRoom.js";
+import { store } from "../src/rooms/store.js";
 
 /** 每个人的座位令牌（真正的浏览器里是随机生成的） */
 const token = (name: string) => `seat-token-of-${name}`;
@@ -35,6 +37,15 @@ function pick(state: GameState, moves: Move[], random: () => number): Move {
 
 /** 现在该谁操作 */
 const actingSeat = (state: GameState): Seat => state.pending[0]?.seat ?? state.turn!.seat;
+
+/** 等到这个房间被销毁（所有人都离开以后，房间会自己销毁） */
+async function waitUntilGone(code: string) {
+    for (let i = 0; i < 100; i++) {
+        if ((await matchMaker.query({ roomId: code })).length === 0) return;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(`房间 ${code} 一直没有销毁`);
+}
 
 describe("GameRoom", () => {
     let colyseus: ColyseusTestServer<typeof appConfig>;
@@ -164,11 +175,11 @@ describe("GameRoom", () => {
         expect(reply.state!.version).toBe(0);
     });
 
-    it("同一个令牌又连进来一次：旧的连接被请出去", async () => {
+    it("同一个令牌又连进来一次：旧的连接被请出去，关闭代码是 SEAT_TAKEN", async () => {
         const { room, clients: [alice] } = await roomWith("Alice", "Bob");
-        const left = new Promise<void>((resolve) => alice.onLeave(() => resolve()));
+        const left = new Promise<number>((resolve) => alice.onLeave((code) => resolve(code)));
         const alice2 = await colyseus.connectTo(room, { nickname: "Alice", seatToken: token("Alice") });
-        await left;
+        expect(await left).toBe(SEAT_TAKEN);
         expect(room.state.players.size).toBe(2);
         expect(room.state.hostSessionId).toBe(alice2.sessionId);
         expect(room.state.players.get(alice2.sessionId)!.seat).toBe(0);
@@ -194,4 +205,73 @@ describe("GameRoom", () => {
         expect(room.state.phase).toBe("ended");
         expect(room.state.activeSeat).toBe(-1);
     }, 30000);
+
+    it("开局和每一步都写进存档", async () => {
+        const { room, clients } = await roomWith("Alice", "Bob");
+        await clients[0].request("start", { setupMode: "sets" });
+        const saved = store.load(room.roomId)!;
+        expect(saved.seats).toHaveLength(2);
+        expect(saved.seats).toEqual(expect.arrayContaining([
+            { seat: room.state.players.get(clients[0].sessionId)!.seat, nickname: "Alice", seatToken: token("Alice") },
+            { seat: room.state.players.get(clients[1].sessionId)!.seat, nickname: "Bob", seatToken: token("Bob") },
+        ]));
+        expect(saved.moves).toEqual([]);
+
+        const { state } = await clients[0].request("sync");
+        const seat = actingSeat(state!);
+        const who = clients.find((c) => room.state.players.get(c.sessionId)!.seat === seat)!;
+        const move = getLegalMoves(state!, seat)[0];
+        await who.request("move", { move, version: 0 });
+        expect(store.load(room.roomId)!.moves).toEqual([{ seat, move }]);
+    });
+
+    it("所有人都离开以后，凭房间码和令牌把这一局建回来，接着打", async () => {
+        const { room, clients } = await roomWith("Alice", "Bob");
+        await clients[0].request("start", { setupMode: "draft" });
+        const code = room.roomId;
+        const bySeat = new Map(clients.map((c) => [room.state.players.get(c.sessionId)!.seat, c]));
+        const bobSeat = room.state.players.get(clients[1].sessionId)!.seat;
+        // 先走 20 步
+        const random = randomFrom(11);
+        let state = (await clients[0].request("sync")).state!;
+        for (let i = 0; i < 20; i++) {
+            const seat = actingSeat(state);
+            await bySeat.get(seat)!.request("move", { move: pick(state, getLegalMoves(state, seat), random), version: state.version });
+            state = (await bySeat.get(seat)!.request("sync")).state!;
+        }
+
+        // 所有人都离开，房间销毁（服务器重启也一样：房间没了，存档还在）
+        for (const c of clients) await c.leave();
+        await waitUntilGone(code);
+
+        // Alice 带上 resume 把房间建回来：房间码、局面、日志都和原来一样
+        const alice = await colyseus.sdk.create("game", { nickname: "Alice", seatToken: token("Alice"), resume: code });
+        expect(alice.roomId).toBe(code);
+        const reply: SyncReply = await alice.request("sync");
+        expect(reply.state).toEqual(state);
+        expect(reply.steps).toHaveLength(20);
+
+        // Bob 照常用房间码加入，回到原来的座位
+        const bob = await colyseus.sdk.joinById(code, { nickname: "Bob", seatToken: token("Bob") });
+        const resumed = colyseus.getRoomById<GameRoom>(code);
+        expect(resumed.state.phase).toBe("playing");
+        expect(resumed.state.players.get(bob.sessionId)!.seat).toBe(bobSeat);
+        expect(resumed.state.players.get(alice.sessionId)!.connected).toBe(true);
+
+        // 接着打，存档接着记
+        const seat = actingSeat(state);
+        const move = getLegalMoves(state, seat)[0];
+        const reply21 = seat === bobSeat
+            ? await bob.request("move", { move, version: 20 })
+            : await alice.request("move", { move, version: 20 });
+        expect(reply21).toEqual({ version: 21 });
+        expect(store.load(code)!.moves).toHaveLength(21);
+    });
+
+    it("房间还开着就不能再建一次；没有存档的房间码建不回来", async () => {
+        const { room, clients } = await roomWith("Alice", "Bob");
+        await clients[0].request("start", { setupMode: "sets" });
+        await expect(colyseus.sdk.create("game", { nickname: "Alice", seatToken: token("Alice"), resume: room.roomId })).rejects.toThrow("room-exists");
+        await expect(colyseus.sdk.create("game", { nickname: "Alice", seatToken: token("Alice"), resume: "ZZZZZ" })).rejects.toThrow("not-found");
+    });
 });
