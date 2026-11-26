@@ -10,6 +10,8 @@ interface Props {
     /** 现在由谁操作（卡片上标出来）；只读预览时是"我"的座位 */
     me: Seat;
     meLabel: string;
+    /** 联机时掉线了的座位 */
+    offline?: readonly Seat[];
     viewed: Seat;
     onView: (seat: Seat) => void;
 }
@@ -19,7 +21,7 @@ interface Props {
  * 能量碗、钥匙、工具、金币、学者、桥、四色书，每轮收入，航行、改造、学科等级，城市板块。
  * 点卡片在下面看 TA 的规划板
  */
-export function PlayerList({ state, name, me, meLabel, viewed, onView }: Props) {
+export function PlayerList({ state, name, me, meLabel, offline = [], viewed, onView }: Props) {
     return (
         <ol className="players" aria-label="玩家（按本轮行动顺序），点一位看 TA 的规划板">
             {state.turnOrder.map((seat, i) => {
@@ -42,6 +44,7 @@ export function PlayerList({ state, name, me, meLabel, viewed, onView }: Props) 
                                 <span className="pcard-name">
                                     {name(seat)}
                                     {seat === me && <em>{meLabel}</em>}
+                                    {offline.includes(seat) && <em className="pcard-offline" title="掉线了，等 TA 回来">离线</em>}
                                 </span>
                                 <span className="pcard-vp" aria-label={`${p ? p.vp : 0} 分`}><span className="num">{p ? p.vp : "—"}</span></span>
                             </span>

@@ -213,7 +213,7 @@ export function hasSavedGame(): boolean {
  * 某一步引擎不认了（比如你改了规则），就停在那一步之前，并且说明停在哪里
  */
 export function resumeSavedGame() {
-    let saved: Saved;
+    let saved: Saved | null;
     try {
         saved = JSON.parse(localStorage.getItem(SAVE_KEY) ?? "null");
     } catch {

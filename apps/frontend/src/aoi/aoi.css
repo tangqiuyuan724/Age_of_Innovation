@@ -499,6 +499,49 @@ td.finalsheet-total { font: 700 30px/1 var(--serif); }
 .finalsheet-foot { display: flex; align-items: flex-end; gap: 24px; padding: 14px 28px 20px; }
 .finalsheet-foot p { flex: 1; max-width: 60em; font-size: 12px; color: var(--ink-soft); }
 
+/* ---------- 联机：首页、等人的房间（和本地试玩的开始页是同一张羊皮纸） ---------- */
+.lobby h2, .waitroom h2 { margin: 0 0 6px; font: 600 16px/1.4 var(--serif); }
+.lobby button, .waitroom button {
+    padding: 6px 16px; border: 1px solid var(--bronze); border-radius: 6px; cursor: pointer;
+    color: var(--ink); background: linear-gradient(#F7EED9, #E4D2AB);
+}
+.lobby button:disabled, .waitroom button:disabled { opacity: .5; cursor: not-allowed; }
+.lobby .primary, .waitroom .primary { color: var(--gold-bright); background: linear-gradient(#2E4659, #1B2B38); border-color: #0C141B; }
+.lobby-name { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.start .lobby-name input { width: 12em; font-size: 16px; }
+.lobby-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lobby-or { color: var(--ink-soft); }
+.lobby-join { display: flex; gap: 8px; }
+.start .lobby-join input { width: 6.5em; font-size: 16px; letter-spacing: .18em; }
+.lobby-joining { color: var(--ink-soft); }
+.lobby-recent { display: grid; gap: 4px; padding-top: 12px; border-top: 1px solid rgba(140,106,60,.35); }
+.lobby-recent ul { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.lobby-recent b { letter-spacing: .08em; }
+.lobby-offline { font-size: 13px; color: var(--ink-soft); }
+
+.waitroom-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.waitroom-code { padding: 0 10px; border-radius: 6px; letter-spacing: .12em; background: rgba(43,33,22,.08); }
+.waitroom-seats { display: grid; gap: 6px; counter-reset: seat; }
+.waitroom-seats li {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px; counter-increment: seat;
+    border: 1px solid rgba(140,106,60,.45); border-radius: 6px; background: rgba(255,253,246,.6);
+}
+.waitroom-seats li::before {
+    content: counter(seat); width: 22px; height: 22px; display: grid; place-items: center;
+    border-radius: 50%; font-size: 12px; color: #FFF6DE; background: var(--ink);
+}
+.waitroom-name { font: 600 16px/1.4 var(--serif); }
+.waitroom-tag { padding: 0 6px; border-radius: 3px; font-size: 11px; background: rgba(43,33,22,.12); }
+.waitroom-me { color: #FFF6DE; background: var(--ink); }
+.waitroom-offline { opacity: .6; }
+.waitroom-wait { color: var(--ink-soft); }
+.start.waitroom fieldset { grid-auto-flow: row; }
+
+/* 联机时提示条右边：房间码、断线提示；玩家卡片上的"离线" */
+.online-code { padding: 2px 8px; border-radius: 4px; font-size: 13px; letter-spacing: .06em; background: rgba(43,33,22,.07); }
+.online-status { padding: 2px 8px; border-radius: 4px; font-size: 13px; color: #FFF6DE; background: #8A3B24; }
+.pcard-name .pcard-offline { background: #8A3B24; }
+
 /* 屏幕再窄一点（比如 1280 的笔记本）：玩家 / 日志挪到玩家板下面，玩家卡片横着排 */
 @media (max-width: 1360px) {
     .table {

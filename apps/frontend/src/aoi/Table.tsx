@@ -36,6 +36,12 @@ interface Props {
     onCloseNotice?: () => void;
     /** 提示条右边的按钮 */
     tools?: ReactNode;
+    /** 玩家卡片上"我"的标签。默认：能操作时是"操作中"（本地试玩，大家轮流坐到电脑前），只读预览是"你" */
+    meLabel?: string;
+    /** 联机时掉线了的座位，玩家卡片上标"离线" */
+    offline?: readonly Seat[];
+    /** 提示条上要不要"回大厅"的链接。联机时离开房间要点"离开房间"，就不要这个链接 */
+    lobbyLink?: boolean;
 }
 
 /**
@@ -44,9 +50,9 @@ interface Props {
  *   左：地图（回合轨、书本行动、能量行动都画在地图贴图上）　右：学科板、能力板块、回合奖励板块、城市和宫殿板块　最右：玩家 / 日志两个页签
  *   地图下面：正在查看的那位玩家的玩家板（开局时是选组合 / 轮抽）
  *   游戏结束时：终局计分表盖在最上面
- * 预览页和本地试玩共用这一个组件，区别只在有没有 send。M2 接上服务器后，send 换成"发给服务器"
+ * 预览页、本地试玩、联机共用这一个组件：预览页没有 send；本地试玩的 send 交给浏览器里的引擎；联机的 send 发给服务器
  */
-export function Table({ state, name, me, send, log, notice, onCloseNotice, tools }: Props) {
+export function Table({ state, name, me, send, log, notice, onCloseNotice, tools, meLabel, offline, lobbyLink = true }: Props) {
     const geo = mapGeometry(state.options.mapId);
     const labels = useMemo(() => boardLabels(geo), [geo]);
     const namer: Namer = { name, hex: (id) => labels[id] ?? id };
@@ -93,7 +99,7 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
         <div className="aoi-root table">
             <PromptBar
                 state={state} actor={actor} name={name} hexName={namer.hex} send={send}
-                passing={passing && canAct} onPassing={setPassing} tools={tools}
+                passing={passing && canAct} onPassing={setPassing} tools={tools} lobbyLink={lobbyLink}
                 onShowFinal={ended ? () => setShowFinal(true) : undefined}
             />
 
@@ -165,7 +171,7 @@ export function Table({ state, name, me, send, log, notice, onCloseNotice, tools
 
             <aside className="table-feed" aria-label="玩家和日志">
                 <FeedTabs
-                    players={<PlayerList state={state} name={name} me={me} meLabel={send ? "操作中" : "你"} viewed={viewed} onView={setViewed} />}
+                    players={<PlayerList state={state} name={name} me={me} meLabel={meLabel ?? (send ? "操作中" : "你")} offline={offline} viewed={viewed} onView={setViewed} />}
                     log={log ? <GameLog entries={log} state={state} namer={namer} /> : null}
                     logCount={log?.length ?? 0}
                 />

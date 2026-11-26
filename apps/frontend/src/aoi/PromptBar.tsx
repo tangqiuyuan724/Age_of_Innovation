@@ -23,13 +23,15 @@ interface Props {
     tools?: ReactNode;
     /** 游戏结束后重新打开终局计分表 */
     onShowFinal?: () => void;
+    /** 右上角要不要"回大厅"的链接 */
+    lobbyLink?: boolean;
 }
 
 /**
  * 顶上的提示条：现在轮到谁、要做什么。轮到操作的人时变成金色，能点的按钮都在这一条上；
  * 地图格子、行动格、学者格、板块直接在桌面上点
  */
-export function PromptBar({ state, actor, name, hexName, send, passing, onPassing, tools, onShowFinal }: Props) {
+export function PromptBar({ state, actor, name, hexName, send, passing, onPassing, tools, onShowFinal, lobbyLink = true }: Props) {
     const d = state.pending[0];
     const turn = state.turn;
     const mine = send !== undefined && actor !== null && (d !== undefined ? d.seat === actor : turn?.seat === actor);
@@ -67,7 +69,7 @@ export function PromptBar({ state, actor, name, hexName, send, passing, onPassin
             <div className="prompt-body">{body}</div>
             <div className="prompt-tools">
                 {tools}
-                <a className="prompt-back" href="#">回大厅</a>
+                {lobbyLink && <a className="prompt-back" href="#">回大厅</a>}
             </div>
         </header>
     );
