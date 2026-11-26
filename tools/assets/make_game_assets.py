@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """把 Images 文件夹里的扫描图裁剪、缩小，放进前端能读到的 apps/frontend/public/game-assets/。
+地图和学科板用的是 Images/贴图/ 里的两张贴图（见下面的 SKIN_*）。
 
 这些图是官方美术，只在你自己电脑上用：Images 和 game-assets 都写在 .gitignore 里，
 不会被提交，也不会被部署出去。前端完全靠这些图来画桌面，没有它们页面上会出现
@@ -16,7 +17,7 @@ from pathlib import Path
 import sys
 from typing import Callable
 
-from PIL import Image, ImageDraw, ImageFilter, ImageOps, features
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps, features
 
 ROOT = Path(__file__).resolve().parents[2]
 # 素材文件夹默认是仓库根目录的 Images；设置环境变量 AOI_IMAGES 可以换成别的地方
@@ -137,9 +138,7 @@ ASSETS: dict[str, list[tuple[str, str]]] = {
         ("banking", "9793414A.png"),  # 图 144
     ],
     "board": [
-        ("science", "D741EDB7.jpg"),  # 图 148：学科板
         ("display", "C3CDCF92.jpg"),  # 创新板块和能力板块的展示板
-        ("frame", "7A38BC6D.png"),  # 图 147：地图的边框（中间是空的）
     ],
 }
 
@@ -176,18 +175,11 @@ def shrink(kind: str, img: Image.Image) -> Image.Image:
 
 # 图 122 是一张图集：左上角是回合轨，下面一排是行动格。书本行动的图本身就带着格子，这里只裁 6 个能量行动格
 ATLAS_TRACKS = "A0A3BF4B.png"
-# 图 123 也是图集：地图模块，每个六边形宽 214 像素（尖顶朝上）
-ATLAS_HEXES = "493893E9.png"
 
 # 能量行动格的左边缘（图 122 里，y 在 1900~2105 之间），顺序和引擎的 PowerActionId 一样
 POWER_SLOTS = {"bridge": 1347, "scholar": 1772, "tools2": 2194, "coins7": 2606, "spade1": 3026, "spade2": 3434}
 
-# 图 123 里每种地形挑一个完整的六边形，记它的中心
-TERRAIN_HEXES = {
-    "forest": (108, 117), "lake": (536, 117), "swamp": (750, 117), "plains": (964, 117),
-    "wasteland": (1178, 117), "mountain": (1392, 117), "desert": (2462, 117),
-}
-HEX_R = 124  # 六边形中心到顶点的距离
+HEX_R = 124  # 地形图（214 × 248）里，六边形中心到顶点的距离
 
 
 def hex_mask(size: tuple[int, int], r: float) -> Image.Image:
@@ -318,19 +310,65 @@ def make_crops(save: Callable[[str, str, Image.Image], None], missing: list[str]
         for action_id, x in POWER_SLOTS.items():
             save("powerAction", action_id, crop_trim(atlas, (x - 8, 1896, x + 390, 2110)))
 
-    src = find(ATLAS_HEXES)
-    if src is None:
-        missing.append(f"图集 123（文件名以 {ATLAS_HEXES} 结尾）：地形")
+
+
+# ---------- 地图和学科板的贴图（Images/贴图/ 里的两张） ----------
+
+SKIN_DIR = SRC / "贴图"
+SKIN_MAP = "地图.png"        # 1570 × 972：左边是回合轨，下面一排是书本行动和能量行动，中间是地图
+SKIN_SCIENCE = "学科板.png"  # 616 × 968
+# 地图贴图连左边的回合轨、下面一排行动格一起用，只裁掉四周不属于版图的一小圈（最左边一条别的界面、上面一条细边）
+MAP_CROP = (14, 4, 1566, 972)
+# 在地图贴图（裁之前）上量的格子：A1 的中心、左右相邻两格的距离、上下相邻两行的距离、中心到上下顶点的距离。
+# 图上的六边形比正六边形扁一点（高只有 96%），所以上下的距离和左右的不成比例
+MAP_A1 = (259.5, 106.0)
+MAP_COL, MAP_ROW, MAP_RV = 99.9, 83.0, 55.5
+# 改造以后的地形图：每种地形挑地图上的一格裁下来（行、列从 0 数，列连河流一起数，和引擎一样）
+SKIN_TERRAIN_HEXES = {
+    "lake": (2, 1), "swamp": (2, 2), "mountain": (3, 1), "wasteland": (3, 2),
+    "desert": (3, 4), "forest": (4, 1), "plains": (4, 2),
+}
+
+
+def skin_terrain(img: Image.Image, row: int, col: int) -> Image.Image:
+    """从地图贴图上裁下一格，盖掉格子上部印的编号，拉成和别的地形图一样的正六边形"""
+    cx = MAP_A1[0] + MAP_COL * (col + 0.5 * (row % 2))
+    cy = MAP_A1[1] + MAP_ROW * row
+    part = img.crop((round(cx - MAP_COL / 2), round(cy - MAP_RV), round(cx + MAP_COL / 2), round(cy + MAP_RV)))
+    w, h = part.size
+    # 编号是白字黑边，印在格子中心往上 38 像素的地方。先找出那一小块里很白的点
+    # （红、蓝都很高；格子的奶油色边框蓝色低一些，不会被选中），往外扩几个像素把黑边也包进去
+    r, _, b, _ = part.split()
+    white = ImageChops.multiply(Image.eval(r, lambda v: 255 if v > 235 else 0), Image.eval(b, lambda v: 255 if v > 235 else 0))
+    near = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(near).rectangle((w / 2 - 22, h / 2 - 49, w / 2 + 22, h / 2 - 27), fill=255)
+    mask = ImageChops.multiply(white, near).filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(1))
+    # 这些点换成正下方 26 像素处的图案（同一种地形，看不出来）
+    donor = Image.new("RGBA", (w, h))
+    donor.paste(part, (0, -26))
+    part = Image.composite(donor, part, mask)
+    part = part.resize((214, 248), Image.Resampling.LANCZOS)
+    part.putalpha(hex_mask(part.size, HEX_R))
+    return part
+
+
+def make_skins(save: Callable[[str, str, Image.Image], None], missing: list[str]) -> None:
+    path = SKIN_DIR / SKIN_MAP
+    if not path.is_file():
+        missing.append(f"贴图/{SKIN_MAP}：地图")
     else:
-        with Image.open(src) as img:
-            atlas = img.convert("RGBA")
-        w, h = 214, 248
-        for terrain, (cx, cy) in TERRAIN_HEXES.items():
-            part = atlas.crop((cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2))
-            # 只留中间这一格：邻居露出来的角用六边形蒙版切掉
-            alpha = Image.composite(part.getchannel("A"), Image.new("L", part.size, 0), hex_mask(part.size, HEX_R))
-            part.putalpha(alpha)
-            save("terrain", terrain, part)
+        with Image.open(path) as img:
+            board = img.convert("RGBA")
+        save("board", "map", board.crop(MAP_CROP))
+        for terrain, (row, col) in SKIN_TERRAIN_HEXES.items():
+            save("terrain", terrain, skin_terrain(board, row, col))
+
+    path = SKIN_DIR / SKIN_SCIENCE
+    if not path.is_file():
+        missing.append(f"贴图/{SKIN_SCIENCE}：学科板")
+    else:
+        with Image.open(path) as img:
+            save("board", "science", img.convert("RGBA"))
 
 
 def main() -> int:
@@ -366,6 +404,7 @@ def main() -> int:
                 save(kind, asset_id, img)
     make_crops(save, missing)
     make_city_tiles(save, missing)
+    make_skins(save, missing)
 
     print(f"生成了 {made} 张图，放在 {OUT.relative_to(ROOT)}")
     for m in missing:
