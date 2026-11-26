@@ -2,11 +2,10 @@
 //  - 左半边：这一轮每做一次某种行动，马上得几分（只在行动阶段算）
 //  - 右半边：这一轮结束时的科学奖励：某门学科每有 per 级，拿一份 reward（第 6 轮没有）
 // 来源：规则书附录 IX，和 Images 里的 105~116 号图核对过。
-import type { Discipline, ResourceBundle, RoundScoreId } from "../types.js";
-
+import type { Discipline, FinalRoundScoreId, ResourceBundle, RoundScoreId } from "../types.js";
 /**
  * 能得分的行动。回合计分板块、回合奖励板块（以后还有能力板块、创新板块）都用这些名字：
- *  - workshop：建工坊；riverWorkshop：在河边建工坊
+  *  - workshop：建工坊；riverWorkshop：在河边建工坊；borderWorkshop：在版图边缘建工坊
  *  - guild / school：建行会 / 学校；bigBuilding：建宫殿或大学
  *  - spade：每用 1 把铲子（改造一步）
  *  - level：学科每前进 1 级
@@ -15,7 +14,7 @@ import type { Discipline, ResourceBundle, RoundScoreId } from "../types.js";
  *  - track：推进航行轨或改造轨
  */
 export type ScoreAction =
-    | "workshop" | "riverWorkshop" | "guild" | "school" | "bigBuilding"
+    | "workshop" | "riverWorkshop" | "borderWorkshop" | "guild" | "school" | "bigBuilding"
     | "spade" | "level" | "scholar" | "city" | "innovation" | "track";
 
 export interface RoundScoreDef {
@@ -107,4 +106,31 @@ function fitsRound(id: RoundScoreId, round: number, rounds: (RoundScoreId | null
         if (same.length >= 2) return false;
     }
     return true;
+}
+
+/** 终局回合计分板块：第 6 轮里每做一次 action 得 vp 分（和第 6 轮的回合计分板块一起算） */
+export interface FinalRoundScoreDef {
+    id: FinalRoundScoreId;
+    action: ScoreAction;
+    vp: number;
+}
+
+export const FINAL_ROUND_SCORES: Record<FinalRoundScoreId, FinalRoundScoreDef> = {
+    guild: { id: "guild", action: "guild", vp: 3 },
+    borderWorkshop: { id: "borderWorkshop", action: "borderWorkshop", vp: 3 },
+    school: { id: "school", action: "school", vp: 4 },
+    workshop: { id: "workshop", action: "workshop", vp: 2 },
+};
+
+export const FINAL_ROUND_SCORE_IDS = Object.keys(FINAL_ROUND_SCORES) as FinalRoundScoreId[];
+
+/** 得分行动对应哪种建筑："版图边缘建工坊"也是工坊 */
+function buildingOf(action: ScoreAction): ScoreAction {
+    return action === "borderWorkshop" ? "workshop" : action;
+}
+
+/** 开局摆终局回合计分板块：从洗好的 shuffled 里挑第一块"和第 6 轮的板块不是同一种建筑"的 */
+export function pickFinalRoundScore(shuffled: readonly FinalRoundScoreId[], round6: RoundScoreId): FinalRoundScoreId {
+    const taken = buildingOf(ROUND_SCORE_TILES[round6].action);
+    return shuffled.find((id) => buildingOf(FINAL_ROUND_SCORES[id].action) !== taken)!;
 }

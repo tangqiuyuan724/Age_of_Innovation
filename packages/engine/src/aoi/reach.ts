@@ -3,9 +3,14 @@ import { MAPS } from "./content/maps.js";
 import { hexesInReach, parseMap } from "./map.js";
 import type { GameState, HexId, MapGeometry, PlayerState, Seat } from "./types.js";
 
+/** 解析好的地图。每张地图只解析一次：getLegalMoves 一次要检查上百条指令，每条都重新解析太慢 */
+const geometries = new Map<string, MapGeometry>();
+
 /** 这局用的地图（解析好的） */
 export function geometryOf(state: GameState): MapGeometry {
-    return parseMap(MAPS[state.options.mapId]);
+    const id = state.options.mapId;
+    if (!geometries.has(id)) geometries.set(id, parseMap(MAPS[id]));
+    return geometries.get(id)!;
 }
 
 /** 某位玩家所有建筑所在的格子（中立建筑也算，它们也属于这位玩家） */

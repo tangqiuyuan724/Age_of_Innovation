@@ -75,12 +75,14 @@ describe("一轮的行动阶段结束", () => {
         expect(state.players.every((p) => p.specialsUsed.length === 0)).toBe(true);
         expect(state.board.bonusTiles.map((t) => t.coins)).toEqual(game.board.bonusTiles.map((t) => t.coins + 1));
     });
-    it("第 6 轮：没有科学奖励，游戏结束", () => {
+        it("第 6 轮：没有科学奖励，算终局分，游戏结束", () => {
         const s: GameState = { ...allPassed(game), round: LAST_ROUND };
         const { state, events } = endActions(s);
         expect(state.phase).toBe("ended");
         expect(state.pending).toEqual([]);
-        expect(events).toEqual([{ type: "phase", round: LAST_ROUND, phase: "ended" }]);
+        expect(state.finalScores).toHaveLength(3);
+        expect(events).toContainEqual({ type: "phase", round: LAST_ROUND, phase: "ended" });
+        expect(events[events.length - 1].type).toBe("gameEnded");
     });
 });
 

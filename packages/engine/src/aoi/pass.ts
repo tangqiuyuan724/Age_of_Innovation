@@ -5,6 +5,7 @@
 //  4. 下一轮的行动顺序按 pass 的先后排
 import { LAST_ROUND } from "./constants.js";
 import { BONUS_TILES } from "./content/bonusTiles.js";
+import { sacrificePower } from "./power.js";
 import { structuresOf } from "./reach.js";
 import { checkMainAction, type Applied } from "./turn.js";
 import type { BonusTileId, BuildingType, Decision, GameEvent, GameState, RuleError, Seat } from "./types.js";
@@ -52,6 +53,12 @@ export function applyPass(state: GameState, seat: Seat, bonusTile: BonusTileId |
         player = { ...player, bonusTile, coins: player.coins + taken.coins };
         events.push({ type: "tileTaken", seat, tile: bonusTile, kind: "bonus" });
         if (taken.coins > 0) events.push({ type: "resources", seat, delta: { coins: taken.coins }, reason: "bonusTile" });
+    }
+
+    // 最后一轮（第 6 轮）pass 以后不会再行动了：碗 II 里能牺牲的能量全部牺牲掉，碗 III 里的能量终局时能换分
+    const sacrifices = Math.floor(player.power[1] / 2);
+    if (state.round === LAST_ROUND && sacrifices > 0) {
+        player = { ...player, power: sacrificePower(player.power, sacrifices)! };
     }
 
     // 4. 记下 pass 的先后，下一轮按这个顺序行动

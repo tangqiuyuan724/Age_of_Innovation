@@ -5,7 +5,7 @@
 // 所有类型都必须能直接 JSON 序列化：不用 class、Map、Set、Date。
 // ============================================================
 
-export const CONTRACT_VERSION = 7;
+export const CONTRACT_VERSION = 8;
 
 // ---------- 基础 ----------
 
@@ -121,7 +121,12 @@ export type RoundScoreId =
     | "cityEngineering"  // 拿城市板块 5 分；工程每 4 级 1 铲
     | "trackEngineering" // 推进航行轨或改造轨 3 分；工程每 3 级 1 学者
     | "innovationLaw";   // 拿创新板块 5 分；法律每 2 级 3 能量
-export type FinalRoundScoreId = string; // 最终轮次积分板块
+/** 4 个终局回合计分板块：第 6 轮盖在回合计分板块的右半边（Images 117~120） */
+export type FinalRoundScoreId =
+    | "guild"           // 建行会 3 分
+    | "borderWorkshop"  // 在版图边缘建工坊 3 分
+    | "school"          // 建学校 4 分
+    | "workshop";       // 建工坊 2 分
 /** 开局时一组"派系 + 规划板 + 回合奖励板块"的编号 */
 export type SetupSetId = number;
 
@@ -373,7 +378,7 @@ export interface SetupOptions {
 export interface FinalScore {
     seat: Seat;
     total: number;
-    /** 计分明细，例如 { area: 18, science: 12, resources: 3 } */
+    /** 计分明细：{ game: 游戏中拿到的分, area: 区域, science: 学科, resources: 剩下的资源 }，total 是四项之和 */
     breakdown: Record<string, number>;
 }
 

@@ -3,6 +3,7 @@
 // 每执行完一条指令，applyMove 都调用 autoAdvance：没有人需要做决定的时候，游戏自己往下走。
 import { LAST_ROUND } from "./constants.js";
 import { ROUND_SCORE_TILES } from "./content/roundScores.js";
+import { endGame } from "./final.js";
 import { collectIncome, incomeOf } from "./income.js";
 import { gainResources, scaleBundle } from "./resources.js";
 import type { Applied } from "./turn.js";
@@ -39,9 +40,7 @@ export function scienceBonusOf(state: GameState, seat: Seat): { gain: ResourceBu
  *  3. 场上每块回合奖励板块上放 1 金币
  */
 export function endActions(state: GameState): Applied {
-    if (state.round === LAST_ROUND) {
-        return { state: { ...state, phase: "ended" }, events: [{ type: "phase", round: state.round, phase: "ended" }] };
-    }
+        if (state.round === LAST_ROUND) return endGame(state);
     const events: GameEvent[] = [{ type: "phase", round: state.round, phase: "scienceBonus" }];
     const pending: Decision[] = [...state.pending];
     let players: PlayerState[] = state.players;

@@ -30,3 +30,6 @@ export * from "./specialActions.js";
 export * from "./pass.js";
 export * from "./roundScore.js";
 export * from "./round.js";
+export * from "./final.js";
+export * from "./legal.js";
+export * from "./public.js";

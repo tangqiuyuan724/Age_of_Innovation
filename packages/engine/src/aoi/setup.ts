@@ -8,8 +8,8 @@ import { FACTIONS, FACTION_IDS } from "./content/factions.js";
 import { MAPS } from "./content/maps.js";
 import { PALACE_TILE_ALWAYS, PALACE_TILE_IDS } from "./content/palaceTiles.js";
 import { PLANNING_DISPLAYS, PLANNING_IDS } from "./content/planning.js";
-import { BOOK_ACTION_IDS, FINAL_ROUND_SCORE_IDS } from "./content/tiles.js";
-import { ROUND_SCORE_IDS, pickRoundScores } from "./content/roundScores.js";
+import { BOOK_ACTION_IDS } from "./content/tiles.js";
+import { FINAL_ROUND_SCORE_IDS, ROUND_SCORE_IDS, pickFinalRoundScore, pickRoundScores } from "./content/roundScores.js";
 import { CITY_TILE_COPIES, CITY_TILE_IDS } from "./content/cityTiles.js";
 import { COMPETENCY_IDS, layCompetencies } from "./content/competencies.js";
 import { initialHexes, parseMap } from "./map.js";
@@ -74,6 +74,12 @@ export function createGame(options: SetupOptions, seed: string): GameState {
         };
     }
 
+    // 下面三样按原来的顺序洗（洗的顺序一变，同一个种子开出来的局就不一样了）
+    const bookActions = take(BOOK_ACTION_IDS).slice(0, 3);
+    const roundScores = pickRoundScores(take(ROUND_SCORE_IDS));
+    // 终局回合计分板块不能和第 6 轮的回合计分板块是同一种建筑
+    const finalRoundScore = pickFinalRoundScore(take(FINAL_ROUND_SCORE_IDS), roundScores[5]);
+
     const state: GameState = {
         contractVersion: CONTRACT_VERSION,
         version: 0,
@@ -93,7 +99,7 @@ export function createGame(options: SetupOptions, seed: string): GameState {
             setupSets,
             draft,
             powerActionsUsed: [],
-            bookActions: take(BOOK_ACTION_IDS).slice(0, 3),
+            bookActions,
             bookActionsUsed: [],
             scholarSpaces: {
                 banking: [null, null, null, null],
@@ -102,8 +108,8 @@ export function createGame(options: SetupOptions, seed: string): GameState {
                 medicine: [null, null, null, null],
             },
             level12: { banking: null, law: null, engineering: null, medicine: null },
-            roundScores: pickRoundScores(take(ROUND_SCORE_IDS)),
-            finalRoundScore: take(FINAL_ROUND_SCORE_IDS)[0],
+            roundScores,
+            finalRoundScore,
             bonusTiles: bonusOnBoard.map((id) => ({ id, coins: 1 })),
             innovationsAvailable: [],
             competencyGrid: layCompetencies(take(COMPETENCY_IDS)),
